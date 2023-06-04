@@ -25,9 +25,9 @@ func log(msg string, color string, symbol string, tty bool) {
 
 	// See https://no-color.org
 	if os.Getenv("NO_COLOR") != "" {
-		str = fmt.Sprint(symbol, " ", msg, "\n")
+		str = symbol + " " + msg + "\n"
 	} else {
-		str = fmt.Sprint(color, symbol, COLOR_RESET, " ", msg, "\n")
+		str = color + symbol + COLOR_RESET + " " + msg + "\n"
 	}
 
 	if tty {
