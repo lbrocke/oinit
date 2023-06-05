@@ -1,5 +1,5 @@
-// This file handles all kinds to things related to ssh files like system/user
-// configuration files and known_hosts.
+// Package sshutil handles all kinds to things related to ssh files like
+// system/user configuration files and known_hosts.
 
 package sshutil
 
@@ -23,9 +23,9 @@ type FilePaths struct {
 	System string
 }
 
-// findPaths returns a FilePaths with the given file names for user and
-// system level OpenSSH files, such as 'config'/'ssh_config' and
-// 'known_hosts'/'ssh_known_hosts'.
+// findPaths returns a FilePaths with the given file names for user and system
+// level OpenSSH files, such as 'config' / 'ssh_config' and 'known_hosts' /
+// 'ssh_known_hosts'.
 //
 // The base paths for user and system are determined based on GOOS.
 func findPaths(userFile string, systemFile string) (FilePaths, error) {
