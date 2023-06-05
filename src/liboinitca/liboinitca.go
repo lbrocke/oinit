@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const (
@@ -65,8 +66,9 @@ func parseResponse(responseBody io.ReadCloser, into interface{}) error {
 
 // NewClient creates a new API client. addr is the server address (and port)
 // including the protocol, such as http://example.com:8080
-// addr must not end with a slash.
 func NewClient(addr string) Client {
+	addr, _ = strings.CutSuffix(addr, "/")
+
 	return Client{
 		addr: addr,
 	}
