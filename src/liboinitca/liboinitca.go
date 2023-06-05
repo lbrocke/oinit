@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 const (
@@ -75,7 +76,7 @@ func NewClient(addr string) Client {
 func (c Client) GetHost(host string) (ApiResponseHost, error) {
 	var response ApiResponseHost
 
-	res, err := http.Get(c.addr + "/" + host)
+	res, err := http.Get(c.addr + "/" + url.PathEscape(host))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
@@ -103,7 +104,7 @@ func (c Client) PostHostCertificate(host, token string) (ApiResponseCertificate,
 		return response, err
 	}
 
-	res, err := http.Post(c.addr+"/"+host+"/certificate", "application/json", bytes.NewReader(reqBody))
+	res, err := http.Post(c.addr+"/"+host+"/"+url.PathEscape("certificate"), "application/json", bytes.NewReader(reqBody))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
