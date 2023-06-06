@@ -36,7 +36,8 @@ type ApiResponseCertificate struct {
 }
 
 type FormHostCertificate struct {
-	Token string `json:"token"`
+	Pubkey string `json:"pubkey"`
+	Token  string `json:"token"`
 }
 
 // parseError tries to unmarshal the given response body into
@@ -96,11 +97,12 @@ func (c Client) GetHost(host string) (ApiResponseHost, error) {
 }
 
 // Generate and return a new SSH certificate using the given access token.
-func (c Client) PostHostCertificate(host, token string) (ApiResponseCertificate, error) {
+func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCertificate, error) {
 	var response ApiResponseCertificate
 
 	reqBody, err := json.Marshal(FormHostCertificate{
-		Token: token,
+		Pubkey: pubkey,
+		Token:  token,
 	})
 	if err != nil {
 		return response, err
