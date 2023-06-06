@@ -30,7 +30,8 @@ type UriHost struct {
 }
 
 type FormHostCertificate struct {
-	Token string `json:"token" binding:"required"`
+	Pubkey string `json:"pubkey" binding:"required"`
+	Token  string `json:"token" binding:"required"`
 }
 
 // GetIndex is the handler for GET /
@@ -60,11 +61,11 @@ func GetHost(c *gin.Context) {
 // PostHostCertificate is the handler for POST /:host/certificate
 //
 //	@Summary		Generate SSH certificate
-//	@Description	Generate and return a new SSH certificate using the given access token.
+//	@Description	Generate and return a new SSH certificate using the given public key and access token.
 //	@Accept			json
 //	@Produce		json
 //	@Param			host	path		string				true	"Host"	example("example.com")
-//	@Param			token	body		FormHostCertificate	true	"Access Token"
+//	@Param			body	body		FormHostCertificate	true	"Public key and access token"
 //	@Success		201		{object}	ApiResponseCertificate
 //	@Failure		400		{object}	ApiResponseError
 //	@Router			/{host}/certificate [post]

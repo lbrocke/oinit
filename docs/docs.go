@@ -68,7 +68,7 @@ const docTemplate = `{
         },
         "/{host}/certificate": {
             "post": {
-                "description": "Generate and return a new SSH certificate using the given access token.",
+                "description": "Generate and return a new SSH certificate using the given public key and access token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -86,8 +86,8 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Access Token",
-                        "name": "token",
+                        "description": "Public key and access token",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -154,9 +154,13 @@ const docTemplate = `{
         "api.FormHostCertificate": {
             "type": "object",
             "required": [
+                "pubkey",
                 "token"
             ],
             "properties": {
+                "pubkey": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 }

@@ -25,9 +25,12 @@ definitions:
     type: object
   api.FormHostCertificate:
     properties:
+      pubkey:
+        type: string
       token:
         type: string
     required:
+    - pubkey
     - token
     type: object
 info:
@@ -70,8 +73,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Generate and return a new SSH certificate using the given access
-        token.
+      description: Generate and return a new SSH certificate using the given public
+        key and access token.
       parameters:
       - description: Host
         example: '"example.com"'
@@ -79,9 +82,9 @@ paths:
         name: host
         required: true
         type: string
-      - description: Access Token
+      - description: Public key and access token
         in: body
-        name: token
+        name: body
         required: true
         schema:
           $ref: '#/definitions/api.FormHostCertificate'
