@@ -6,7 +6,6 @@ package sshutil
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 const (
@@ -34,10 +33,7 @@ func findPaths(userFile string, systemFile string) (FilePaths, error) {
 		return FilePaths{}, err
 	}
 
-	var system = filepath.Join(string(filepath.Separator), "etc", "ssh", systemFile)
-	if runtime.GOOS == "windows" {
-		system = filepath.Join(os.Getenv("PROGRAMDATA"), "ssh", systemFile)
-	}
+	var system = filepath.Join(getSystemSSHPath(), "ssh", systemFile)
 
 	return FilePaths{
 		System: system,
