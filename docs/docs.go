@@ -62,6 +62,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.ApiResponseError"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
                     }
                 }
             }
