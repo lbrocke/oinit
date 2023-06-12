@@ -38,6 +38,8 @@ func main() {
 		log.Fatalln("Error while loading config: " + err.Error())
 	}
 
+	gin.SetMode(gin.ReleaseMode)
+
 	router := gin.Default()
 	router.Use(ConfigMiddleware(cfg))
 
@@ -62,6 +64,5 @@ func main() {
 
 	router.GET("/docs/*any", api.GetSwagger)
 
-	gin.SetMode(gin.ReleaseMode)
 	router.Run(addr)
 }
