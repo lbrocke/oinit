@@ -10,7 +10,7 @@ import (
 
 func GetSwagger(c *gin.Context) {
 	if c.Param("any") == "/" {
-		c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
+		c.Redirect(http.StatusMovedPermanently, "/api/docs/index.html")
 		return
 	}
 
