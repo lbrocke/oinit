@@ -90,6 +90,10 @@ func (c Client) GetHost(host string) (ApiResponseHost, error) {
 	case 200:
 		return response, parseResponse(res.Body, &response)
 	case 400:
+		fallthrough
+	case 500:
+		fallthrough
+	case 502:
 		return response, parseError(res.Body)
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
