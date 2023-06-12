@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"oinit-ca/api"
+	"oinit-ca/config"
 	"oinit-ca/docs"
 	"os"
 
@@ -10,21 +11,35 @@ import (
 )
 
 const (
-	USAGE = "Usage: oinit-ca <host>[:port]"
+	USAGE = "Usage: oinit-ca <host>[:port] <path/to/config>"
 
 	SWAGGER_TITLE = "oinit CA API"
 	SWAGGER_DESC  = "Swagger documentation for the oinit CA REST API."
 )
 
+func ConfigMiddleware(config config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("config", config)
+		c.Next()
+	}
+}
+
 func main() {
 	args := os.Args[1:]
-	if len(args) != 1 {
+	if len(args) != 2 {
 		log.Fatalln(USAGE)
 	}
 
 	addr := args[0]
+	conf := args[1]
+
+	cfg, err := config.LoadConfig(conf)
+	if err != nil {
+		log.Fatalln("Error while loading config: " + err.Error())
+	}
 
 	router := gin.Default()
+	router.Use(ConfigMiddleware(cfg))
 
 	v1 := router.Group("/api/v1")
 	{
