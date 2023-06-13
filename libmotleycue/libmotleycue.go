@@ -26,9 +26,32 @@ type LoginInfo struct {
 	SSHHost     string `json:"ssh_host"`
 }
 
+type Credentials struct {
+	CommandLine string `json:"commandline"`
+	Description string `json:"description"`
+	LoginHelp   string `json:"login_help"`
+	SSHHost     string `json:"ssh_host"`
+	SSHUser     string `json:"ssh_user"`
+}
+
 type ApiResponseInfo struct {
 	LoginInfo    LoginInfo `json:"login_info"`
 	SupportedOPs []string  `json:"supported_OPs"`
+}
+
+type UserStatusState string
+
+const (
+	StateDeployed    UserStatusState = "deployed"
+	StateNotDeployed UserStatusState = "not_deployed"
+	StateSuspended   UserStatusState = "suspended"
+)
+
+// Also called "FeudalResponse" in API docs
+type ApiResponseUserStatus struct {
+	State       UserStatusState `json:"state"`
+	Message     string          `json:"message"`
+	Credentials Credentials     `json:"credentials"`
 }
 
 type Client struct {
@@ -87,6 +110,43 @@ func (c Client) GetInfo() (ApiResponseInfo, error) {
 	switch res.StatusCode {
 	case 200:
 		return response, parseResponse(res.Body, &response)
+	default:
+		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
+	}
+}
+
+func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
+	var response ApiResponseUserStatus
+
+	req, err := http.NewRequest(http.MethodGet, c.addr+"/user/get_status", nil)
+	if err != nil {
+		return response, errors.New(ERR_REQUEST)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return response, errors.New(ERR_REQUEST)
+	}
+
+	defer res.Body.Close()
+
+	switch res.StatusCode {
+	case 200:
+		return response, parseResponse(res.Body, &response)
+	case 401:
+		fallthrough
+	case 403:
+		fallthrough
+	case 404:
+		return response, parseError(res.Body)
+	case 422:
+		// In this case, the response body has a different structure and cannot
+		// be parsed easily into a ApiResponseDetail struct, therefore return
+		// custom error.
+		fallthrough
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
 	}
