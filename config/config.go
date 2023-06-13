@@ -41,6 +41,13 @@ type Config struct {
 	HostGroups []HostGroup
 }
 
+type HostInfo struct {
+	Name         string
+	URL          string
+	CertDuration uint64
+	Keys
+}
+
 func LoadConfig(path string) (Config, error) {
 	var conf Config
 	var defOptions DefaultOptions
@@ -203,20 +210,6 @@ func parsePrivateKeyFile(path string) (interface{}, error) {
 	return pk, nil
 }
 
-// GetKeys returns the host and user CA keys for the given host.
-// Prefix matching using wildcards is supported.
-func (c Config) GetKeys(host string) (Keys, error) {
-	for _, confGroup := range c.HostGroups {
-		for cHost := range confGroup.Hosts {
-			if matchesHost(host, cHost) {
-				return confGroup.Keys, nil
-			}
-		}
-	}
-
-	return Keys{}, errors.New(ERR_HOST_NOT_FOUND)
-}
-
 // matchesHost determines whether the given host matches host2.
 // host2 may be a wildcard domain in the form of
 //
@@ -233,14 +226,19 @@ func matchesHost(host, host2 string) bool {
 	}
 }
 
-func (c Config) GetMotleyCueURL(host string) (string, error) {
-	for _, confGroup := range c.HostGroups {
-		for cHost, cCA := range confGroup.Hosts {
-			if matchesHost(host, cHost) {
-				return cCA, nil
+func (c Config) GetInfo(host string) (HostInfo, error) {
+	for _, hostGroup := range c.HostGroups {
+		for hostName, caURL := range hostGroup.Hosts {
+			if matchesHost(host, hostName) {
+				return HostInfo{
+					Name:         hostName,
+					URL:          caURL,
+					CertDuration: hostGroup.CertDuration,
+					Keys:         hostGroup.Keys,
+				}, nil
 			}
 		}
 	}
 
-	return "", errors.New(ERR_HOST_NOT_FOUND)
+	return HostInfo{}, errors.New(ERR_HOST_NOT_FOUND)
 }

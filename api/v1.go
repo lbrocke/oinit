@@ -91,30 +91,21 @@ func GetHost(c *gin.Context) {
 		return
 	}
 
-	ca, err := conf.GetMotleyCueURL(host.Host)
+	info, err := conf.GetInfo(host.Host)
 	if err != nil {
 		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
 		return
 	}
 
-	keys, err := conf.GetKeys(host.Host)
-	if err != nil {
-		// This should not happen, as the non-existence of the given host
-		// should have already resulted in an error in the previous call to
-		// conf.GetMotleyCueURL()
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
-		return
-	}
-
-	info, err := libmotleycue.NewClient(ca).GetInfo()
+	hostInfo, err := libmotleycue.NewClient(info.URL).GetInfo()
 	if err != nil {
 		Error(c, http.StatusBadGateway, ERR_GATEWAY_DOWN)
 		return
 	}
 
 	c.JSON(http.StatusOK, ApiResponseHost{
-		PublicKey: strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(keys.HostCAPublicKey)), "\n"),
-		Providers: info.SupportedOPs,
+		PublicKey: strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(info.HostCAPublicKey)), "\n"),
+		Providers: hostInfo.SupportedOPs,
 	})
 }
 
@@ -153,22 +144,13 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
-	ca, err := conf.GetMotleyCueURL(host.Host)
+	info, err := conf.GetInfo(host.Host)
 	if err != nil {
 		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
 		return
 	}
 
-	keys, err := conf.GetKeys(host.Host)
-	if err != nil {
-		// This should not happen, as the non-existence of the given host
-		// should have already resulted in an error in the previous call to
-		// conf.GetMotleyCueURL()
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
-		return
-	}
-
-	status, err := libmotleycue.NewClient(ca).GetUserStatus(body.Token)
+	status, err := libmotleycue.NewClient(info.URL).GetUserStatus(body.Token)
 	if err != nil {
 		// Either something went wrong with the HTTP request, or the access
 		// token is not valid
@@ -194,7 +176,7 @@ func PostHostCertificate(c *gin.Context) {
 
 	cert := generateUserCertificate(pubkey, body.Token)
 
-	signer, err := ssh.NewSignerFromKey(keys.UserCAPrivateKey)
+	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {
 		Error(c, http.StatusUnauthorized, ERR_INTERNAL_ERROR)
 		return
@@ -202,7 +184,7 @@ func PostHostCertificate(c *gin.Context) {
 
 	// Make sure that certificate is valid and (this *very* is important!) has
 	// the force-command option set to the correct (non-empty) value.
-	if !validateUserCertificate(cert, keys.UserCAPublicKey) {
+	if !validateUserCertificate(cert, info.UserCAPublicKey) {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
 	}
