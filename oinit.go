@@ -1,14 +1,23 @@
 package main
 
 import (
+	"crypto/ed25519"
+	"errors"
 	"fmt"
 	"net"
 	"oinit/src/dnsutil"
 	"oinit/src/liboinitca"
+	"oinit/src/oidc"
 	"oinit/src/sshutil"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/mattn/go-tty"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 const (
@@ -64,17 +73,18 @@ func handleCommandAdd(args []string) {
 			LogWarn("The CA for this host could not be determined from DNS.")
 			LogWarn("You can manually specify the CA by running:")
 			LogWarn("")
-			LogWarn("\toinit add " + hostport + " [ca]")
+			LogWarn("\toinit add " + args[0] + " [ca]")
 			return
 		}
 
 		ca = detected
+		LogInfo("Determined CA from DNS: " + ca)
 	}
 
 	// Try to contact CA, which returns the host CA public key to be added
 	// to the user's known_hosts file.
 	if res, err := liboinitca.NewClient(ca).GetHost(host); err != nil {
-		LogError("Could not contact CA, " + err.Error())
+		LogError("Could not contact CA: " + err.Error())
 		return
 	} else {
 		if err := sshutil.AddSSHKnownHost(host, port, res.PublicKey); err != nil {
@@ -106,7 +116,7 @@ func handleCommandAdd(args []string) {
 		}
 	} else if added {
 		LogInfo("As this is your first time running oinit, your OpenSSH config file has")
-		LogInfo("been modified to invoke oinit when ssh'ing to hosts managed by it.")
+		LogInfo("been modified to invoke oinit when connecting to hosts managed by it.")
 	}
 }
 
@@ -151,8 +161,155 @@ func handleCommandList() {
 	}
 }
 
+func promptProviders(providers []string) (string, error) {
+	if len(providers) == 0 {
+		//lint:ignore ST1005 Error is display to user directly
+		return "", errors.New("The server indicated that no OIDC provider is supported")
+	}
+
+	// todo: Compare list of supported providers with already configured
+	//       or loaded accounts. Unfortunately, liboidcagent's
+	//       GetLoadedAccounts and GetConfiguredAccounts only return the
+	//       short names and no issuer URLs.
+
+	for i, e := range providers {
+		LogTTY(fmt.Sprintf("[%d] %s", i+1, e))
+	}
+
+	tty, err := tty.Open()
+	if err != nil {
+		return "", errors.New("There was an error opening your TTY: " + err.Error())
+	}
+
+	PromptTTY(fmt.Sprintf("Please select a provider to use [1-%d]: ", len(providers)))
+
+	sel, err := tty.ReadString()
+	tty.Close()
+
+	if err != nil {
+		return "", errors.New("There was an error reading from your TTY: " + err.Error())
+	}
+
+	selected, err := strconv.Atoi(sel)
+	if err != nil || selected < 1 || selected > len(providers) {
+		//lint:ignore ST1005 Error is display to user directly
+		return "", errors.New("Your selection is invalid.")
+	}
+
+	return providers[selected-1], nil
+}
+
+// generateEd25519Keys generates a new ED25519 keypair and returns the
+// marshalled public key (ssh-ed25519 AAA...) as well as private key.
+func generateEd25519Keys() (string, ed25519.PrivateKey, error) {
+	pubkey, privkey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		return "", nil, err
+	}
+
+	pubkeyInst, err := ssh.NewPublicKey(pubkey)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(pubkeyInst)), "\n"), privkey, nil
+}
+
 func handleCommandMatch(args []string) {
-	// todo
+	if len(args) != 2 {
+		os.Exit(1)
+	}
+
+	host := args[0]
+	port := args[1]
+	hostport := net.JoinHostPort(host, port)
+
+	if is, err := sshutil.IsManagedHost(hostport); err != nil || !is {
+		// Return non-zero exit code to indicate that host/port do not match
+		os.Exit(1)
+	}
+
+	// Make sure both ssh-agent and oidc-agent are running
+	sshAgentRunning, oidcAgentRunning := sshutil.AgentIsRunning(), oidc.AgentIsRunning()
+	if !sshAgentRunning || !oidcAgentRunning {
+		for agent, running := range map[string]bool{
+			"ssh-agent":  sshAgentRunning,
+			"oidc-agent": oidcAgentRunning,
+		} {
+			if running {
+				LogSuccessTTY(agent + " is running.")
+			} else {
+				LogErrorTTY(agent + " is not running, please start it first.")
+			}
+		}
+
+		os.Exit(1)
+	}
+
+	sshAgent, _ := sshutil.GetAgent()
+	if exists, err := sshutil.AgentHasCertificate(sshAgent); err == nil && exists {
+		// Agent already holds certificate, therefore do not request a new one
+		return
+	}
+
+	ca, err := sshutil.GetCA(hostport)
+	if err != nil {
+		LogErrorTTY("The CA managing '" + host + "' could not be determined.")
+		LogErrorTTY("Did you run 'oinit add " + hostport + "' yet?")
+		os.Exit(1)
+	}
+
+	caClient := liboinitca.NewClient(ca)
+
+	hostRes, err := caClient.GetHost(host)
+	if err != nil {
+		LogErrorTTY("Contacting the CA failed: " + err.Error())
+		os.Exit(1)
+	}
+
+	provider, err := promptProviders(hostRes.Providers)
+	if err != nil {
+		LogErrorTTY(err.Error())
+		os.Exit(1)
+	}
+
+	token, err := oidc.GetToken(provider)
+	if err != nil || token == "" {
+		LogErrorTTY("Could not get token: " + err.Error())
+		os.Exit(1)
+	}
+
+	pubkey, privkey, err := generateEd25519Keys()
+	if err != nil {
+		LogErrorTTY("There was an error generating a temporary key pair.")
+		os.Exit(1)
+	}
+
+	res, err := caClient.PostHostCertificate(host, pubkey, token)
+	if err != nil {
+		LogErrorTTY("CA responded: " + err.Error())
+		os.Exit(1)
+	}
+
+	certPk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(res.Certificate))
+	if err != nil {
+		LogErrorTTY("Cannot parse certificate.")
+		os.Exit(1)
+	}
+
+	cert := certPk.(*ssh.Certificate)
+	validUntil := time.Unix(int64(cert.ValidBefore-1), 0)
+
+	if sshAgent.Add(agent.AddedKey{
+		PrivateKey:   privkey,
+		Certificate:  cert,
+		LifetimeSecs: uint32(time.Until(validUntil).Seconds()),
+	}) != nil {
+		LogErrorTTY("Cannot add private key and certificate to ssh-agent.")
+		os.Exit(1)
+	} else {
+		LogSuccessTTY(fmt.Sprintf("Received a certificate which is valid until %s", validUntil))
+	}
 }
 
 func main() {
