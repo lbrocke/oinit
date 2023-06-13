@@ -1,0 +1,81 @@
+package api
+
+import (
+	"strings"
+
+	"golang.org/x/crypto/ssh"
+)
+
+const (
+	PRINCIPAL     = "oinit"
+	FORCE_COMMAND = "oinit-switch"
+)
+
+// generateUserCertificate generates a new OpenSSH certificate based on the
+// given public key.
+func generateUserCertificate(pubkey ssh.PublicKey, token string) ssh.Certificate {
+	return ssh.Certificate{
+		Key: pubkey,
+		/*
+			From [PROTOCOL.certkeys]:
+				serial is an optional certificate serial number set by the CA to
+				provide an abbreviated way to refer to certificates from that CA.
+				If a CA does not wish to number its certificates it must set this
+				field to zero.
+		*/
+		Serial:   0,
+		CertType: ssh.UserCert,
+		/*
+			From [PROTOCOL.certkeys]:
+				key id is a free-form text field that is filled in by the CA at the time
+				of signing; the intention is that the contents of this field are used to
+				identify the identity principal in log messages.
+		*/
+		KeyId:           "",
+		ValidPrincipals: []string{PRINCIPAL},
+		/*
+			From [PROTOCOL.certkeys]:
+				"valid after" and "valid before" specify a validity period for the
+				certificate. Each represents a time in seconds since 1970-01-01
+				00:00:00. A certificate is considered valid if:
+
+					valid after <= current time < valid before
+		*/
+		ValidAfter:  0,
+		ValidBefore: ssh.CertTimeInfinity,
+		Permissions: ssh.Permissions{
+			CriticalOptions: map[string]string{
+				"force-command": FORCE_COMMAND + " " + token,
+			},
+			Extensions: map[string]string{
+				"permit-agent-forwarding": "",
+			},
+		},
+	}
+}
+
+func hasPrincipal(validPrincipals []string) bool {
+	return len(validPrincipals) == 1 && validPrincipals[0] == PRINCIPAL
+}
+
+func hasForceCommand(criticalOptions map[string]string) bool {
+	for k, v := range criticalOptions {
+		if k == "force-command" && strings.HasPrefix(v, FORCE_COMMAND) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func validateUserCertificate(cert ssh.Certificate, caPubkey ssh.PublicKey) bool {
+	var certChecker ssh.CertChecker
+
+	certChecker.IsUserAuthority = func(auth ssh.PublicKey) bool {
+		return auth == caPubkey
+	}
+
+	return certChecker.CheckCert(PRINCIPAL, &cert) != nil &&
+		hasForceCommand(cert.CriticalOptions) &&
+		hasPrincipal(cert.ValidPrincipals)
+}
