@@ -1,0 +1,188 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Return the running API version.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get API version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseIndex"
+                        }
+                    }
+                }
+            }
+        },
+        "/{host}": {
+            "get": {
+                "description": "Return the CA public key and supported OpenID Connect providers.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get host information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"example.com\"",
+                        "description": "Host",
+                        "name": "host",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/{host}/certificate": {
+            "post": {
+                "description": "Generate and return a new SSH certificate using the given public key and access token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Generate SSH certificate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"example.com\"",
+                        "description": "Host",
+                        "name": "host",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Public key and access token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.FormHostCertificate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseCertificate"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.ApiResponseCertificate": {
+            "type": "object",
+            "properties": {
+                "certificate": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ApiResponseError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ApiResponseHost": {
+            "type": "object",
+            "properties": {
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "publickey": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ApiResponseIndex": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.FormHostCertificate": {
+            "type": "object",
+            "required": [
+                "pubkey",
+                "token"
+            ],
+            "properties": {
+                "pubkey": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

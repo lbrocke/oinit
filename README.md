@@ -1,12 +1,18 @@
 # oinit
-> Command-line tool to add single sign on (SSO) support to OpenSSH
+> Certificate-based single sign on for OpenSSH
 
-## Build and Install
+This repository contains a collection of programs to enable single sign-on in OpenSSH.
+
+## Building
 
 ```sh
-# build binary for testing
-$ go build
+# Client application
+$ make oinit
 
-# install into $GOPATH/bin
-$ go install
+# Server application (CA)
+$ make oinit-ca
 ```
+
+## Development
+
+When changing the REST API annotations, run `make swagger` to generate the Swagger files.

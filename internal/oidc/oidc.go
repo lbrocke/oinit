@@ -34,6 +34,22 @@ func AgentIsRunning() bool {
 	return false
 }
 
+// todo: does not work with v4
+/*func GetIssuerURLs() []string {
+	fmt.Println("GetIssuerURLs:")
+	res, err := liboidcagent.GetAccountInfos()
+	if err != nil {
+		fmt.Println("err:", err)
+		return []string{}
+	}
+
+	for k, v := range res {
+		fmt.Println(k, v.HasPubClient, v.Accounts)
+	}
+
+	return []string{}
+}*/
+
 func GetToken(issuer string) (string, error) {
 	req := liboidcagent.TokenRequest{
 		IssuerURL:       issuer,

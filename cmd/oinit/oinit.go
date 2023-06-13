@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"oinit/src/dnsutil"
-	"oinit/src/liboinitca"
-	"oinit/src/oidc"
-	"oinit/src/sshutil"
+	"oinit/internal/dnsutil"
+	"oinit/internal/oidc"
+	"oinit/internal/sshutil"
+	"oinit/pkg/liboinitca"
+	"oinit/pkg/log"
 	"os"
 	"sort"
 	"strconv"
@@ -56,10 +57,10 @@ func handleCommandAdd(args []string) {
 	// configuration, therefore hosts that were added by the system admin
 	// won't be added to the user config again.
 	if found, err := sshutil.IsManagedHost(hostport); err != nil {
-		LogError("Could not read hosts file: " + err.Error())
+		log.LogError("Could not read hosts file: " + err.Error())
 		return
 	} else if found {
-		LogInfo("This host was already added.")
+		log.LogInfo("This host was already added.")
 		return
 	}
 
@@ -70,53 +71,53 @@ func handleCommandAdd(args []string) {
 	} else {
 		detected, err := dnsutil.LookupCA(host)
 		if err != nil {
-			LogWarn("The CA for this host could not be determined from DNS.")
-			LogWarn("You can manually specify the CA by running:")
-			LogWarn("")
-			LogWarn("\toinit add " + args[0] + " [ca]")
+			log.LogWarn("The CA for this host could not be determined from DNS.")
+			log.LogWarn("You can manually specify the CA by running:")
+			log.LogWarn("")
+			log.LogWarn("\toinit add " + args[0] + " [ca]")
 			return
 		}
 
 		ca = detected
-		LogInfo("Determined CA from DNS: " + ca)
+		log.LogInfo("Determined CA from DNS: " + ca)
 	}
 
 	// Try to contact CA, which returns the host CA public key to be added
 	// to the user's known_hosts file.
 	if res, err := liboinitca.NewClient(ca).GetHost(host); err != nil {
-		LogError("Could not contact CA: " + err.Error())
+		log.LogError("Could not contact CA: " + err.Error())
 		return
 	} else {
 		if err := sshutil.AddSSHKnownHost(host, port, res.PublicKey); err != nil {
-			LogWarn("Could not add public key to your known_hosts file.")
+			log.LogWarn("Could not add public key to your known_hosts file.")
 
 			if newLine, err := sshutil.GenerateKnownHosts(host, port, res.PublicKey); err == nil {
-				LogWarn("Please add the following line by yourself:")
-				LogWarn("\t" + newLine)
+				log.LogWarn("Please add the following line by yourself:")
+				log.LogWarn("\t" + newLine)
 			}
 		}
 	}
 
 	// Add to users' hosts file.
 	if err := sshutil.AddHostUser(hostport, ca); err != nil {
-		LogError("Could not add host: " + err.Error())
+		log.LogError("Could not add host: " + err.Error())
 		return
 	} else {
-		LogSuccess(hostport + " was added.")
+		log.LogSuccess(hostport + " was added.")
 	}
 
 	// Check if 'Match exec ...' block is present, and if not try to add it.
 	if added, err := sshutil.AddSSHMatchBlock(); err != nil {
-		LogWarn("Could not read or modify your OpenSSH config file.")
-		LogWarn("Please verify it contains the following lines:")
-		LogWarn("")
+		log.LogWarn("Could not read or modify your OpenSSH config file.")
+		log.LogWarn("Please verify it contains the following lines:")
+		log.LogWarn("")
 
 		for _, line := range strings.Split(sshutil.GenerateMatchBlock(), "\n") {
-			LogWarn("\t" + line)
+			log.LogWarn("\t" + line)
 		}
 	} else if added {
-		LogInfo("As this is your first time running oinit, your OpenSSH config file has")
-		LogInfo("been modified to invoke oinit when connecting to hosts managed by it.")
+		log.LogInfo("As this is your first time running oinit, your OpenSSH config file has")
+		log.LogInfo("been modified to invoke oinit when connecting to hosts managed by it.")
 	}
 }
 
@@ -130,21 +131,21 @@ func handleCommandDelete(args []string) {
 
 	found, err := sshutil.DeleteHostUser(hostport)
 	if err != nil {
-		LogError("Could not delete host: " + err.Error())
+		log.LogError("Could not delete host: " + err.Error())
 		return
 	}
 
 	if !found {
-		LogError(hostport + " is either not managed by oinit, or configured system-wide.")
+		log.LogError(hostport + " is either not managed by oinit, or configured system-wide.")
 	} else {
-		LogSuccess(hostport + " was deleted.")
+		log.LogSuccess(hostport + " was deleted.")
 	}
 }
 
 func handleCommandList() {
 	all, err := sshutil.GetManagedHosts()
 	if err != nil {
-		LogError("Could not load hosts: " + err.Error())
+		log.LogError("Could not load hosts: " + err.Error())
 		return
 	}
 
@@ -154,7 +155,7 @@ func handleCommandList() {
 	}
 	sort.Strings(hosts)
 
-	LogInfo("The following hosts are managed by oinit:")
+	log.LogInfo("The following hosts are managed by oinit:")
 
 	for _, host := range hosts {
 		fmt.Println("\t" + host)
@@ -173,7 +174,7 @@ func promptProviders(providers []string) (string, error) {
 	//       short names and no issuer URLs.
 
 	for i, e := range providers {
-		LogTTY(fmt.Sprintf("[%d] %s", i+1, e))
+		log.LogTTY(fmt.Sprintf("[%d] %s", i+1, e))
 	}
 
 	tty, err := tty.Open()
@@ -181,7 +182,7 @@ func promptProviders(providers []string) (string, error) {
 		return "", errors.New("There was an error opening your TTY: " + err.Error())
 	}
 
-	PromptTTY(fmt.Sprintf("Please select a provider to use [1-%d]: ", len(providers)))
+	log.PromptTTY(fmt.Sprintf("Please select a provider to use [1-%d]: ", len(providers)))
 
 	sel, err := tty.ReadString()
 	tty.Close()
@@ -237,9 +238,9 @@ func handleCommandMatch(args []string) {
 			"oidc-agent": oidcAgentRunning,
 		} {
 			if running {
-				LogSuccessTTY(agent + " is running.")
+				log.LogSuccessTTY(agent + " is running.")
 			} else {
-				LogErrorTTY(agent + " is not running, please start it first.")
+				log.LogErrorTTY(agent + " is not running, please start it first.")
 			}
 		}
 
@@ -254,8 +255,8 @@ func handleCommandMatch(args []string) {
 
 	ca, err := sshutil.GetCA(hostport)
 	if err != nil {
-		LogErrorTTY("The CA managing '" + host + "' could not be determined.")
-		LogErrorTTY("Did you run 'oinit add " + hostport + "' yet?")
+		log.LogErrorTTY("The CA managing '" + host + "' could not be determined.")
+		log.LogErrorTTY("Did you run 'oinit add " + hostport + "' yet?")
 		os.Exit(1)
 	}
 
@@ -263,37 +264,37 @@ func handleCommandMatch(args []string) {
 
 	hostRes, err := caClient.GetHost(host)
 	if err != nil {
-		LogErrorTTY("Contacting the CA failed: " + err.Error())
+		log.LogErrorTTY("Contacting the CA failed: " + err.Error())
 		os.Exit(1)
 	}
 
 	provider, err := promptProviders(hostRes.Providers)
 	if err != nil {
-		LogErrorTTY(err.Error())
+		log.LogErrorTTY(err.Error())
 		os.Exit(1)
 	}
 
 	token, err := oidc.GetToken(provider)
 	if err != nil || token == "" {
-		LogErrorTTY("Could not get token: " + err.Error())
+		log.LogErrorTTY("Could not get token: " + err.Error())
 		os.Exit(1)
 	}
 
 	pubkey, privkey, err := generateEd25519Keys()
 	if err != nil {
-		LogErrorTTY("There was an error generating a temporary key pair.")
+		log.LogErrorTTY("There was an error generating a temporary key pair.")
 		os.Exit(1)
 	}
 
 	res, err := caClient.PostHostCertificate(host, pubkey, token)
 	if err != nil {
-		LogErrorTTY("CA responded: " + err.Error())
+		log.LogErrorTTY("CA responded: " + err.Error())
 		os.Exit(1)
 	}
 
 	certPk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(res.Certificate))
 	if err != nil {
-		LogErrorTTY("Cannot parse certificate.")
+		log.LogErrorTTY("Cannot parse certificate.")
 		os.Exit(1)
 	}
 
@@ -305,10 +306,10 @@ func handleCommandMatch(args []string) {
 		Certificate:  cert,
 		LifetimeSecs: uint32(time.Until(validUntil).Seconds()),
 	}) != nil {
-		LogErrorTTY("Cannot add private key and certificate to ssh-agent.")
+		log.LogErrorTTY("Cannot add private key and certificate to ssh-agent.")
 		os.Exit(1)
 	} else {
-		LogSuccessTTY(fmt.Sprintf("Received a certificate which is valid until %s", validUntil))
+		log.LogSuccessTTY(fmt.Sprintf("Received a certificate which is valid until %s", validUntil))
 	}
 }
 
