@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/ini.v1"
@@ -13,11 +14,12 @@ const (
 	ERR_HOST_NOT_FOUND = "host not found in config"
 )
 
-type KeyPaths struct {
-	PathHostCAPrivateKey string `ini:"host_ca_privkey"`
-	PathHostCAPublicKey  string `ini:"host_ca_pubkey"`
-	PathUserCAPrivateKey string `ini:"user_ca_privkey"`
-	PathUserCAPublicKey  string `ini:"user_ca_pubkey"`
+type DefaultOptions struct {
+	PathHostCAPrivateKey string `ini:"host-ca-privkey"`
+	PathHostCAPublicKey  string `ini:"host-ca-pubkey"`
+	PathUserCAPrivateKey string `ini:"user-ca-privkey"`
+	PathUserCAPublicKey  string `ini:"user-ca-pubkey"`
+	CertValidity         string `ini:"cert-validity"`
 }
 
 type Keys struct {
@@ -28,10 +30,11 @@ type Keys struct {
 }
 
 type HostGroup struct {
-	KeyPaths
+	DefaultOptions
 	Keys
-	Name  string
-	Hosts map[string]string
+	CertDuration uint64
+	Name         string
+	Hosts        map[string]string
 }
 
 type Config struct {
@@ -40,14 +43,14 @@ type Config struct {
 
 func LoadConfig(path string) (Config, error) {
 	var conf Config
-	var defKeyPaths KeyPaths
+	var defOptions DefaultOptions
 
 	cfg, err := ini.Load(path)
 	if err != nil {
 		return conf, err
 	}
 
-	if err := cfg.MapTo(&defKeyPaths); err != nil {
+	if err := cfg.MapTo(&defOptions); err != nil {
 		return conf, err
 	}
 
@@ -58,27 +61,29 @@ func LoadConfig(path string) (Config, error) {
 		}
 
 		// prefill with global values
-		keys := &KeyPaths{
-			PathHostCAPrivateKey: defKeyPaths.PathHostCAPrivateKey,
-			PathHostCAPublicKey:  defKeyPaths.PathHostCAPublicKey,
-			PathUserCAPrivateKey: defKeyPaths.PathUserCAPrivateKey,
-			PathUserCAPublicKey:  defKeyPaths.PathUserCAPublicKey,
+		opts := &DefaultOptions{
+			PathHostCAPrivateKey: defOptions.PathHostCAPrivateKey,
+			PathHostCAPublicKey:  defOptions.PathHostCAPublicKey,
+			PathUserCAPrivateKey: defOptions.PathUserCAPrivateKey,
+			PathUserCAPublicKey:  defOptions.PathUserCAPublicKey,
+			CertValidity:         defOptions.CertValidity,
 		}
 
-		if err := hostgroup.MapTo(keys); err != nil {
+		if err := hostgroup.MapTo(opts); err != nil {
 			return conf, err
 		}
 
 		hg := &HostGroup{
-			KeyPaths: *keys,
-			Name:     hostgroup.Name(),
-			Hosts:    hostgroup.KeysHash(),
+			DefaultOptions: *opts,
+			Name:           hostgroup.Name(),
+			Hosts:          hostgroup.KeysHash(),
 		}
 
 		hosts := make(map[string]string)
 		for key, val := range hostgroup.KeysHash() {
-			if key == "host_ca_privkey" || key == "host_ca_pubkey" ||
-				key == "user_ca_privkey" || key == "user_ca_pubkey" {
+			if key == "host-ca-privkey" || key == "host-ca-pubkey" ||
+				key == "user-ca-privkey" || key == "user-ca-pubkey" ||
+				key == "cert-validity" {
 				continue
 			}
 
@@ -91,8 +96,9 @@ func LoadConfig(path string) (Config, error) {
 			(hg.PathHostCAPrivateKey == "" ||
 				hg.PathHostCAPublicKey == "" ||
 				hg.PathUserCAPrivateKey == "" ||
-				hg.PathUserCAPublicKey == "") {
-			return conf, errors.New("missing key in hostgroup " + hg.Name)
+				hg.PathUserCAPublicKey == "" ||
+				hg.CertValidity == "") {
+			return conf, errors.New("missing option in hostgroup " + hg.Name)
 		}
 
 		conf.HostGroups = append(conf.HostGroups, *hg)
@@ -100,6 +106,10 @@ func LoadConfig(path string) (Config, error) {
 
 	if loadKeys(&conf) != nil {
 		return conf, errors.New("could not open and parse keys")
+	}
+
+	if parseCertValidities(&conf) != nil {
+		return conf, errors.New("could not parse certificate validities")
 	}
 
 	return conf, nil
@@ -140,6 +150,26 @@ func loadKeys(conf *Config) error {
 		conf.HostGroups[i].Keys.UserCAPublicKey = uniqPubKeys[group.PathUserCAPublicKey]
 		conf.HostGroups[i].Keys.HostCAPrivateKey = uniqPrivKeys[group.PathHostCAPrivateKey]
 		conf.HostGroups[i].Keys.UserCAPrivateKey = uniqPrivKeys[group.PathUserCAPrivateKey]
+	}
+
+	return nil
+}
+
+func parseCertValidities(conf *Config) error {
+	for i, group := range conf.HostGroups {
+		validity := group.CertValidity
+
+		if validity == "token" {
+			conf.HostGroups[i].CertDuration = 0
+			continue
+		}
+
+		dur, err := time.ParseDuration(validity)
+		if err != nil {
+			return err
+		}
+
+		conf.HostGroups[i].CertDuration = uint64(dur.Seconds())
 	}
 
 	return nil
