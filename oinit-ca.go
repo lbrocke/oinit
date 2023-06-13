@@ -62,7 +62,6 @@ func main() {
 
 	docs.SwaggerInfo.Version = api.API_VERSION
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Host = addr
 	docs.SwaggerInfo.Title = SWAGGER_TITLE
 	docs.SwaggerInfo.Description = SWAGGER_DESC
 
