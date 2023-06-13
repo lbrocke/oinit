@@ -2,6 +2,7 @@ package api
 
 import (
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -13,7 +14,10 @@ const (
 
 // generateUserCertificate generates a new OpenSSH certificate based on the
 // given public key.
-func generateUserCertificate(pubkey ssh.PublicKey, token string) ssh.Certificate {
+func generateUserCertificate(pubkey ssh.PublicKey, token string, duration uint64) ssh.Certificate {
+	validAfter := uint64(time.Now().Unix())
+	validBefore := validAfter + duration
+
 	return ssh.Certificate{
 		Key: pubkey,
 		/*
@@ -41,8 +45,8 @@ func generateUserCertificate(pubkey ssh.PublicKey, token string) ssh.Certificate
 
 					valid after <= current time < valid before
 		*/
-		ValidAfter:  0,
-		ValidBefore: ssh.CertTimeInfinity,
+		ValidAfter:  validAfter - 10, // account for slight time differences
+		ValidBefore: validBefore,
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{
 				"force-command": FORCE_COMMAND + " " + token,

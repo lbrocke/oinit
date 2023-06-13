@@ -6,8 +6,10 @@ import (
 	"oinit-ca/config"
 	"oinit-ca/libmotleycue"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -150,6 +152,14 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
+	// Parse JWT without verifying it, as the signer key is unknown to the CA.
+	// motley_cue will verify the token instead.
+	token, _, err := new(jwt.Parser).ParseUnverified(body.Token, jwt.MapClaims{})
+	if err != nil {
+		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
+		return
+	}
+
 	status, err := libmotleycue.NewClient(info.URL).GetUserStatus(body.Token)
 	if err != nil {
 		// Either something went wrong with the HTTP request, or the access
@@ -174,7 +184,16 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
-	cert := generateUserCertificate(pubkey, body.Token)
+	certDuration := info.CertDuration
+	// If CertDuration is set to 0 or negative number, use the expiry date of the
+	// given token as "valid before" date.
+	if certDuration <= 0 {
+		if exp, err := token.Claims.GetExpirationTime(); err == nil {
+			certDuration = uint64(time.Until(exp.Time).Seconds())
+		}
+	}
+
+	cert := generateUserCertificate(pubkey, body.Token, certDuration)
 
 	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {
