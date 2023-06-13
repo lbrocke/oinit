@@ -53,6 +53,7 @@ func generateUserCertificate(pubkey ssh.PublicKey, token string, duration uint64
 			},
 			Extensions: map[string]string{
 				"permit-agent-forwarding": "",
+				"permit-pty":              "",
 			},
 		},
 	}
