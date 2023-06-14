@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	USAGE = "Usage: oinit-ca <host>[:port] <path/to/config>"
+	USAGE = "Usage: oinit-ca <host:port> <path/to/config>"
 
 	SWAGGER_TITLE = "oinit CA API"
 	SWAGGER_DESC  = "Swagger documentation for the oinit CA REST API."
