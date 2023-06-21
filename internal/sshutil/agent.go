@@ -3,6 +3,7 @@ package sshutil
 import (
 	"net"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -47,7 +48,7 @@ func AgentHasCertificate(agent agent.ExtendedAgent, host string) (bool, error) {
 	}
 
 	// Certificates issued by oinit-ca will have the KeyId field set to "user@host"
-	findKeyId := PRINCIPAL + "@" + host
+	findKeyId := PRINCIPAL + "@" + strings.ToLower(host)
 
 	for _, key := range keys {
 		pk, err := ssh.ParsePublicKey(key.Blob)

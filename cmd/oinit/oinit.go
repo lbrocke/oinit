@@ -221,9 +221,9 @@ func handleCommandMatch(args []string) {
 		os.Exit(1)
 	}
 
-	host := args[0]
+	host := strings.ToLower(args[0])
 	port := args[1]
-	hostport := net.JoinHostPort(host, port)
+	hostport := strings.ToLower(net.JoinHostPort(host, port))
 
 	if is, err := sshutil.IsManagedHost(hostport); err != nil || !is {
 		// Return non-zero exit code to indicate that host/port do not match

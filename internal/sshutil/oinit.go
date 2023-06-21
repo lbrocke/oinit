@@ -26,6 +26,9 @@ func matchesHost(host string, port string, host2 string, port2 string) bool {
 
 // AddHostUser adds the given host/port and CA to the user's hosts file.
 func AddHostUser(hostport, ca string) error {
+	hostport = strings.ToLower(hostport)
+	ca = strings.ToLower(ca)
+
 	paths, err := pathsHosts()
 	if err != nil {
 		return err
@@ -51,6 +54,8 @@ func AddHostUser(hostport, ca string) error {
 // returned when the host/port was successfully deleted or if it wasn't found
 // in the user's file.
 func DeleteHostUser(hostport string) (bool, error) {
+	hostport = strings.ToLower(hostport)
+
 	paths, err := pathsHosts()
 	if err != nil {
 		return false, err
@@ -106,6 +111,8 @@ func IsManagedHost(hostport string) (bool, error) {
 
 // GetCA returns the CA stored in the user's hosts file for a given host/port.
 func GetCA(hostport string) (string, error) {
+	hostport = strings.ToLower(hostport)
+
 	managedHosts, err := GetManagedHosts()
 	if err != nil {
 		return "", err
