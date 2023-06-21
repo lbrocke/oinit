@@ -227,8 +227,12 @@ func matchesHost(host, host2 string) bool {
 }
 
 func (c Config) GetInfo(host string) (HostInfo, error) {
+	host = strings.ToLower(host)
+
 	for _, hostGroup := range c.HostGroups {
 		for hostName, caURL := range hostGroup.Hosts {
+			hostName = strings.ToLower(hostName)
+
 			if matchesHost(host, hostName) {
 				return HostInfo{
 					Name:         hostName,

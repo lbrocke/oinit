@@ -87,6 +87,8 @@ func GetHost(c *gin.Context) {
 		return
 	}
 
+	host.Host = strings.ToLower(host.Host)
+
 	conf, ok := c.MustGet("config").(config.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
@@ -133,6 +135,8 @@ func PostHostCertificate(c *gin.Context) {
 		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
 		return
 	}
+
+	host.Host = strings.ToLower(host.Host)
 
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Pubkey))
 	if err != nil {
