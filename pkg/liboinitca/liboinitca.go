@@ -123,6 +123,12 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCert
 	case 201:
 		return response, parseResponse(res.Body, &response)
 	case 400:
+		fallthrough
+	case 401:
+		fallthrough
+	case 500:
+		fallthrough
+	case 502:
 		return response, parseError(res.Body)
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
