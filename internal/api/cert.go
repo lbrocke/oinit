@@ -14,7 +14,7 @@ const (
 
 // generateUserCertificate generates a new OpenSSH certificate based on the
 // given public key.
-func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, duration uint64) ssh.Certificate {
+func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, url string, duration uint64) ssh.Certificate {
 	validAfter := uint64(time.Now().Unix())
 	validBefore := validAfter + duration
 
@@ -45,7 +45,7 @@ func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, du
 		ValidBefore: validBefore,
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{
-				"force-command": FORCE_COMMAND + " " + token,
+				"force-command": FORCE_COMMAND + " " + token + " " + url,
 			},
 			Extensions: map[string]string{
 				"permit-agent-forwarding": "",
