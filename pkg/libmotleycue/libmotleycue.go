@@ -12,8 +12,9 @@ import (
 const (
 	ERR_REQUEST              = "http request failed"
 	ERR_RESPONSE_BODY        = "cannot parse response body"
+	ERR_UNEXPECTED_ERROR     = "server returned error code but no description"
 	ERR_SERVER_RESPONSE      = "server responded: "
-	ERR_SERVER_RESPONSE_CODE = "server responded with unexpected code: %d"
+	ERR_SERVER_RESPONSE_CODE = "server responded with code: %d"
 )
 
 type ApiResponseDetail struct {
@@ -69,6 +70,11 @@ func parseError(responseBody io.ReadCloser) error {
 		return errors.New(ERR_RESPONSE_BODY)
 	}
 
+	// Make sure the .Detail field was filled after Unmarshalling the JSON data.
+	if response.Detail == "" {
+		response.Detail = ERR_UNEXPECTED_ERROR
+	}
+
 	return errors.New(response.Detail)
 }
 
@@ -93,6 +99,8 @@ func NewClient(addr string) Client {
 	}
 }
 
+// GetInfo calls GET /info.
+//
 // Retrieve service-specific information:
 //
 //   - login info
@@ -115,10 +123,12 @@ func (c Client) GetInfo() (ApiResponseInfo, error) {
 	}
 }
 
-func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
+// getUser is the implementation of both GET /user/get_status and GET
+// /user/deploy, as their request parameters and response are identical.
+func (c Client) getUser(path string, token string) (ApiResponseUserStatus, error) {
 	var response ApiResponseUserStatus
 
-	req, err := http.NewRequest(http.MethodGet, c.addr+"/user/get_status", nil)
+	req, err := http.NewRequest(http.MethodGet, c.addr+path, nil)
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
@@ -150,4 +160,24 @@ func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
 	}
+}
+
+// GetUserStatus calls GET /user/status.
+//
+// Get information about your local account:
+//
+//   - state: one of the supported states, such as deployed, not_deployed, suspended.
+//   - message: could contain additional information, such as the local username
+//
+// Requires an authorised user.
+func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
+	return c.getUser("/user/get_status", token)
+}
+
+// GetUserDeploy calls GET /user/deploy.
+//
+// Provision a local account.
+// Requires an authorised user.
+func (c Client) GetUserDeploy(token string) (ApiResponseUserStatus, error) {
+	return c.getUser("/user/deploy", token)
 }
