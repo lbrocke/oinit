@@ -1,19 +1,23 @@
-OINIT_OUT=oinit
-OINITCA_OUT=oinit-ca
+BIN_CLI=oinit
+BIN_CA=oinit-ca
+BIN_SWITCH=oinit-switch
 
-.PHONY: all oinit oinit-ca swag clean
+.PHONY: all oinit oinit-ca swagger oinit-switch clean
 
-all: oinit oinit-ca
+all: oinit oinit-ca oinit-switch
 
 oinit:
-	go build -o ./bin/${OINIT_OUT} cmd/oinit/oinit.go
+	go build -o ./bin/${BIN_CLI} cmd/oinit/oinit.go
 
 oinit-ca:
-	go build -o ./bin/${OINITCA_OUT} cmd/oinit-ca/oinit-ca.go
+	go build -o ./bin/${BIN_CA} cmd/oinit-ca/oinit-ca.go
 
 swagger:
 	swag init --parseInternal -g cmd/oinit-ca/oinit-ca.go -o api/docs/
 	swag fmt -d internal/api/
+
+oinit-switch:
+	go build -o ./bin/${BIN_SWITCH} cmd/oinit-switch/oinit-switch.go
 
 clean:
 	rm -rf ./bin
