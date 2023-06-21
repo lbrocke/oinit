@@ -15,7 +15,7 @@ type socket struct {
 }
 
 const (
-	VALID_PRINCIPAL = "oinit"
+	PRINCIPAL = "oinit"
 )
 
 func AgentIsRunning() bool {
@@ -40,11 +40,14 @@ func GetAgent() (agent.ExtendedAgent, error) {
 	return agent.NewClient(sshAgentSock), err
 }
 
-func AgentHasCertificate(agent agent.ExtendedAgent) (bool, error) {
+func AgentHasCertificate(agent agent.ExtendedAgent, host string) (bool, error) {
 	keys, err := agent.List()
 	if err != nil {
 		return false, err
 	}
+
+	// Certificates issued by oinit-ca will have the KeyId field set to "user@host"
+	findKeyId := PRINCIPAL + "@" + host
 
 	for _, key := range keys {
 		pk, err := ssh.ParsePublicKey(key.Blob)
@@ -55,10 +58,10 @@ func AgentHasCertificate(agent agent.ExtendedAgent) (bool, error) {
 
 		cert := pk.(*ssh.Certificate)
 
-		// A certificate listing the correct user as valid principal is used
-		// as criteria, as the certificates don't contain hostnames they're
-		// valid for.
-		if slices.Contains(cert.ValidPrincipals, VALID_PRINCIPAL) {
+		// A certificate listing the correct key id and principal is used
+		// as criteria for a matching certificate.
+		if cert.KeyId == findKeyId &&
+			slices.Contains(cert.ValidPrincipals, PRINCIPAL) {
 			return true, nil
 		}
 	}

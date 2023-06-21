@@ -248,7 +248,7 @@ func handleCommandMatch(args []string) {
 	}
 
 	sshAgent, _ := sshutil.GetAgent()
-	if exists, err := sshutil.AgentHasCertificate(sshAgent); err == nil && exists {
+	if exists, err := sshutil.AgentHasCertificate(sshAgent, host); err == nil && exists {
 		// Agent already holds certificate, therefore do not request a new one
 		return
 	}
