@@ -14,38 +14,34 @@ const (
 
 // generateUserCertificate generates a new OpenSSH certificate based on the
 // given public key.
-func generateUserCertificate(pubkey ssh.PublicKey, token string, duration uint64) ssh.Certificate {
+func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, duration uint64) ssh.Certificate {
 	validAfter := uint64(time.Now().Unix())
 	validBefore := validAfter + duration
 
 	return ssh.Certificate{
 		Key: pubkey,
-		/*
-			From [PROTOCOL.certkeys]:
-				serial is an optional certificate serial number set by the CA to
-				provide an abbreviated way to refer to certificates from that CA.
-				If a CA does not wish to number its certificates it must set this
-				field to zero.
-		*/
+		// From OpenSSH PROTOCOL.certkeys:
+		//   serial is an optional certificate serial number set by the CA to
+		//   provide an abbreviated way to refer to certificates from that CA.
+		//   If a CA does not wish to number its certificates it must set this
+		//   field to zero.
 		Serial:   0,
 		CertType: ssh.UserCert,
-		/*
-			From [PROTOCOL.certkeys]:
-				key id is a free-form text field that is filled in by the CA at the time
-				of signing; the intention is that the contents of this field are used to
-				identify the identity principal in log messages.
-		*/
-		KeyId:           "",
+		// From OpenSSH PROTOCOL.certkeys:
+		//   key id is a free-form text field that is filled in by the CA at
+		//   the time of signing; the intention is that the contents of this
+		//   field are used to identify the identity principal in log messages.
+		//
+		// Set KeyId to "user@host" which can be used by the client to check
+		// which host this certificate was issued for.
+		KeyId:           PRINCIPAL + "@" + host,
 		ValidPrincipals: []string{PRINCIPAL},
-		/*
-			From [PROTOCOL.certkeys]:
-				"valid after" and "valid before" specify a validity period for the
-				certificate. Each represents a time in seconds since 1970-01-01
-				00:00:00. A certificate is considered valid if:
-
-					valid after <= current time < valid before
-		*/
-		ValidAfter:  validAfter - 10, // account for slight time differences
+		// From OpenSSH PROTOCOL.certkeys:
+		//   "valid after" and "valid before" specify a validity period for the
+		//   certificate. Each represents a time in seconds since 1970-01-01
+		//   00:00:00. A certificate is considered valid if:
+		//     valid after <= current time < valid before
+		ValidAfter:  validAfter - 10, // account for slight clock differences
 		ValidBefore: validBefore,
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{

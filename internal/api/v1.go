@@ -193,7 +193,7 @@ func PostHostCertificate(c *gin.Context) {
 		}
 	}
 
-	cert := generateUserCertificate(pubkey, body.Token, certDuration)
+	cert := generateUserCertificate(host.Host, pubkey, body.Token, certDuration)
 
 	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {
