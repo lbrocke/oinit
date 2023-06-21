@@ -16,6 +16,8 @@ const (
 	ERR_RESPONSE_BODY        = "cannot parse response body"
 	ERR_SERVER_RESPONSE      = "server responded: "
 	ERR_SERVER_RESPONSE_CODE = "server responded with unexpected code: %d"
+
+	API_V1 = "/api/v1"
 )
 
 type Client struct {
@@ -79,7 +81,7 @@ func NewClient(addr string) Client {
 func (c Client) GetHost(host string) (ApiResponseHost, error) {
 	var response ApiResponseHost
 
-	res, err := http.Get(c.addr + "/" + url.PathEscape(host))
+	res, err := http.Get(c.addr + API_V1 + "/" + url.PathEscape(host))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
@@ -112,7 +114,7 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCert
 		return response, err
 	}
 
-	res, err := http.Post(c.addr+"/"+host+"/"+url.PathEscape("certificate"), "application/json", bytes.NewReader(reqBody))
+	res, err := http.Post(c.addr+API_V1+"/"+host+"/"+url.PathEscape("certificate"), "application/json", bytes.NewReader(reqBody))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
