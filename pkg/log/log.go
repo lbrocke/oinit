@@ -53,6 +53,11 @@ func LogError(msg string) {
 	log(msg, COLOR_RED, SYMBOL_ERROR, false, true)
 }
 
+func LogFatal(msg string) {
+	LogError(msg)
+	os.Exit(1)
+}
+
 func LogErrorTTY(msg string) {
 	log(msg, COLOR_RED, SYMBOL_ERROR, true, true)
 }
