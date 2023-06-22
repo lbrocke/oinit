@@ -12,6 +12,9 @@ oinit:
 oinit-ca:
 	go build -o ./bin/${BIN_CA} cmd/oinit-ca/oinit-ca.go
 
+oinit-ca-docker:
+	docker build -f build/Dockerfile -t oinit-ca .
+
 swagger:
 	swag init --parseInternal -g cmd/oinit-ca/oinit-ca.go -o api/docs/
 	swag fmt -d internal/api/
