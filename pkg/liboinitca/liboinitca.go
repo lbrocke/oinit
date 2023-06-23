@@ -29,12 +29,17 @@ type ApiResponseError struct {
 }
 
 type ApiResponseHost struct {
-	PublicKey string   `json:"publickey"`
-	Providers []string `json:"providers"`
+	PublicKey string     `json:"publickey"`
+	Providers []Provider `json:"providers"`
 }
 
 type ApiResponseCertificate struct {
 	Certificate string `json:"certificate"`
+}
+
+type Provider struct {
+	URL    string   `json:"url"`
+	Scopes []string `json:"scopes"`
 }
 
 type FormHostCertificate struct {

@@ -61,10 +61,10 @@ func GetConfiguredAccounts() map[string][]string {
 	return accounts
 }
 
-func GetToken(issuer string) (string, error) {
+func GetToken(issuer string, scopes []string) (string, error) {
 	req := liboidcagent.TokenRequest{
 		IssuerURL:       issuer,
-		Scopes:          []string{"openid", "profile", "offline_access"},
+		Scopes:          scopes,
 		ApplicationHint: "oinit",
 	}
 

@@ -271,13 +271,30 @@ func handleCommandMatch(args []string) {
 		os.Exit(1)
 	}
 
-	provider, err := promptProviders(hostRes.Providers)
+	// Put provider URLs into slice to be able to sort them
+	providers := make([]string, len(hostRes.Providers))
+	for i, info := range hostRes.Providers {
+		providers[i] = info.URL
+	}
+	sort.Strings(providers)
+
+	provider, err := promptProviders(providers)
 	if err != nil {
 		log.LogErrorTTY(err.Error())
 		os.Exit(1)
 	}
 
-	token, err := oidc.GetToken(provider)
+	// Get scopes for selected provider
+	var scopes []string
+	for _, info := range hostRes.Providers {
+		if info.URL != provider {
+			continue
+		}
+
+		scopes = info.Scopes
+	}
+
+	token, err := oidc.GetToken(provider, scopes)
 	if err != nil {
 		log.LogErrorTTY("Could not get token: " + err.Error())
 		os.Exit(1)
