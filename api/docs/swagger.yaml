@@ -13,7 +13,7 @@ definitions:
     properties:
       providers:
         items:
-          type: string
+          $ref: '#/definitions/api.Provider'
         type: array
       publickey:
         type: string
@@ -33,6 +33,15 @@ definitions:
     - pubkey
     - token
     type: object
+  api.Provider:
+    properties:
+      scopes:
+        items:
+          type: string
+        type: array
+      url:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -49,7 +58,8 @@ paths:
       summary: Get API version
   /{host}:
     get:
-      description: Return the CA public key and supported OpenID Connect providers.
+      description: Return the CA public key and supported OpenID Connect providers
+        with their required scopes.
       parameters:
       - description: Host
         example: '"example.com"'

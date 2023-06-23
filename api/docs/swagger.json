@@ -23,7 +23,7 @@
         },
         "/{host}": {
             "get": {
-                "description": "Return the CA public key and supported OpenID Connect providers.",
+                "description": "Return the CA public key and supported OpenID Connect providers with their required scopes.",
                 "produces": [
                     "application/json"
                 ],
@@ -153,7 +153,7 @@
                 "providers": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/api.Provider"
                     }
                 },
                 "publickey": {
@@ -180,6 +180,20 @@
                     "type": "string"
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Provider": {
+            "type": "object",
+            "properties": {
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "url": {
                     "type": "string"
                 }
             }

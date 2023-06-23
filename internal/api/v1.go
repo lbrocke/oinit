@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -32,12 +33,17 @@ type ApiResponseIndex struct {
 }
 
 type ApiResponseHost struct {
-	PublicKey string   `json:"publickey"`
-	Providers []string `json:"providers"`
+	PublicKey string     `json:"publickey"`
+	Providers []Provider `json:"providers"`
 }
 
 type ApiResponseCertificate struct {
 	Certificate string `json:"certificate"`
+}
+
+type Provider struct {
+	URL    string   `json:"url"`
+	Scopes []string `json:"scopes"`
 }
 
 type UriHost struct {
@@ -71,7 +77,7 @@ func GetIndex(c *gin.Context) {
 // GetHost is the handler for GET /:host
 //
 //	@Summary		Get host information
-//	@Description	Return the CA public key and supported OpenID Connect providers.
+//	@Description	Return the CA public key and supported OpenID Connect providers with their required scopes.
 //	@Produce		json
 //	@Param			host	path		string	true	"Host"	example("example.com")
 //	@Success		200		{object}	ApiResponseHost
@@ -107,9 +113,23 @@ func GetHost(c *gin.Context) {
 		return
 	}
 
+	var providers []Provider
+
+	// Iterate OpsInfo instead of SupportedOPs to only add hosts for which
+	// scopes are defined. Validate that issuer is listed in SupportedOPs
+	// however.
+	for issuer, info := range hostInfo.OpsInfo {
+		if slices.Contains(hostInfo.SupportedOPs, issuer) {
+			providers = append(providers, Provider{
+				URL:    issuer,
+				Scopes: info.Scopes,
+			})
+		}
+	}
+
 	c.JSON(http.StatusOK, ApiResponseHost{
 		PublicKey: strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(info.HostCAPublicKey)), "\n"),
-		Providers: hostInfo.SupportedOPs,
+		Providers: providers,
 	})
 }
 

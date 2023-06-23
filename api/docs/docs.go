@@ -35,7 +35,7 @@ const docTemplate = `{
         },
         "/{host}": {
             "get": {
-                "description": "Return the CA public key and supported OpenID Connect providers.",
+                "description": "Return the CA public key and supported OpenID Connect providers with their required scopes.",
                 "produces": [
                     "application/json"
                 ],
@@ -165,7 +165,7 @@ const docTemplate = `{
                 "providers": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/api.Provider"
                     }
                 },
                 "publickey": {
@@ -192,6 +192,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Provider": {
+            "type": "object",
+            "properties": {
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "url": {
                     "type": "string"
                 }
             }
