@@ -168,13 +168,16 @@ func promptProviders(providers []string) (string, error) {
 		return "", errors.New("The server indicated that no OIDC provider is supported")
 	}
 
-	// todo: Compare list of supported providers with already configured
-	//       or loaded accounts. Unfortunately, liboidcagent's
-	//       GetLoadedAccounts and GetConfiguredAccounts only return the
-	//       short names and no issuer URLs.
+	accs := oidc.GetConfiguredAccounts()
 
-	for i, e := range providers {
-		log.LogTTY(fmt.Sprintf("[%d] %s", i+1, e))
+	for i, issuer := range providers {
+		str := issuer
+
+		if accounts, ok := accs[issuer]; ok && len(accounts) > 0 {
+			str = str + " (Accounts: " + strings.Join(accs[issuer], ", ") + ")"
+		}
+
+		log.LogTTY(fmt.Sprintf("[%d] %s", i+1, str))
 	}
 
 	tty, err := tty.Open()
@@ -275,8 +278,12 @@ func handleCommandMatch(args []string) {
 	}
 
 	token, err := oidc.GetToken(provider)
-	if err != nil || token == "" {
+	if err != nil {
 		log.LogErrorTTY("Could not get token: " + err.Error())
+		os.Exit(1)
+	}
+	if token == "" {
+		log.LogErrorTTY("Received empty token.")
 		os.Exit(1)
 	}
 

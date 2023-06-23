@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
-	github.com/indigo-dc/liboidcagent-go v0.4.1
+	github.com/indigo-dc/liboidcagent-go v0.4.2-0.20230613074241-6bb14c3d9e17
 	github.com/mattn/go-tty v0.0.5
 	github.com/stretchr/testify v1.8.3
 	github.com/swaggo/files v1.0.1
