@@ -3,7 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"net/http"
-	"oinit/internal/config"
+	"oinit/internal/caconfig"
 	"oinit/pkg/libmotleycue"
 	"strings"
 	"time"
@@ -95,7 +95,7 @@ func GetHost(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	conf, ok := c.MustGet("config").(config.Config)
+	conf, ok := c.MustGet("config").(caconfig.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
@@ -164,7 +164,7 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
-	conf, ok := c.MustGet("config").(config.Config)
+	conf, ok := c.MustGet("config").(caconfig.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return

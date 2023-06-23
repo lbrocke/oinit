@@ -4,7 +4,7 @@ import (
 	"log"
 	docs "oinit/api/docs"
 	"oinit/internal/api"
-	"oinit/internal/config"
+	"oinit/internal/caconfig"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +17,7 @@ const (
 	SWAGGER_DESC  = "Swagger documentation for the oinit CA REST API."
 )
 
-func ConfigMiddleware(config config.Config) gin.HandlerFunc {
+func ConfigMiddleware(config caconfig.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("config", config)
 		c.Next()
@@ -33,7 +33,7 @@ func main() {
 	addr := args[0]
 	conf := args[1]
 
-	cfg, err := config.LoadConfig(conf)
+	cfg, err := caconfig.LoadConfig(conf)
 	if err != nil {
 		log.Fatalln("Error while loading config: " + err.Error())
 	}

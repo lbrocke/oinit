@@ -7,6 +7,7 @@ import (
 	"net"
 	"oinit/internal/dnsutil"
 	"oinit/internal/oidc"
+	"oinit/internal/oinit"
 	"oinit/internal/sshutil"
 	"oinit/pkg/liboinitca"
 	"oinit/pkg/log"
@@ -56,7 +57,7 @@ func handleCommandAdd(args []string) {
 	// Check if host was already added before. This also includes the system-wide
 	// configuration, therefore hosts that were added by the system admin
 	// won't be added to the user config again.
-	if found, err := sshutil.IsManagedHost(hostport); err != nil {
+	if found, err := oinit.IsManagedHost(hostport); err != nil {
 		log.LogError("Could not read hosts file: " + err.Error())
 		return
 	} else if found {
@@ -99,7 +100,7 @@ func handleCommandAdd(args []string) {
 	}
 
 	// Add to users' hosts file.
-	if err := sshutil.AddHostUser(hostport, ca); err != nil {
+	if err := oinit.AddHostUser(hostport, ca); err != nil {
 		log.LogError("Could not add host: " + err.Error())
 		return
 	} else {
@@ -129,7 +130,7 @@ func handleCommandDelete(args []string) {
 
 	hostport := args[0]
 
-	found, err := sshutil.DeleteHostUser(hostport)
+	found, err := oinit.DeleteHostUser(hostport)
 	if err != nil {
 		log.LogError("Could not delete host: " + err.Error())
 		return
@@ -143,7 +144,7 @@ func handleCommandDelete(args []string) {
 }
 
 func handleCommandList() {
-	all, err := sshutil.GetManagedHosts()
+	all, err := oinit.GetManagedHosts()
 	if err != nil {
 		log.LogError("Could not load hosts: " + err.Error())
 		return
@@ -228,7 +229,7 @@ func handleCommandMatch(args []string) {
 	port := args[1]
 	hostport := strings.ToLower(net.JoinHostPort(host, port))
 
-	if is, err := sshutil.IsManagedHost(hostport); err != nil || !is {
+	if is, err := oinit.IsManagedHost(hostport); err != nil || !is {
 		// Return non-zero exit code to indicate that host/port do not match
 		os.Exit(1)
 	}
@@ -256,19 +257,17 @@ func handleCommandMatch(args []string) {
 		return
 	}
 
-	ca, err := sshutil.GetCA(hostport)
+	ca, err := oinit.GetCA(hostport)
 	if err != nil {
-		log.LogErrorTTY("The CA managing '" + host + "' could not be determined.")
-		log.LogErrorTTY("Did you run 'oinit add " + hostport + "' yet?")
-		os.Exit(1)
+		log.LogFatalTTY("The CA managing '" + host + "' could not be determined.\n" +
+			"Did you run 'oinit add " + hostport + "' yet?")
 	}
 
 	caClient := liboinitca.NewClient(ca)
 
 	hostRes, err := caClient.GetHost(host)
 	if err != nil {
-		log.LogErrorTTY("Contacting the CA failed: " + err.Error())
-		os.Exit(1)
+		log.LogFatalTTY("Contacting the CA failed: " + err.Error())
 	}
 
 	// Put provider URLs into slice to be able to sort them
@@ -280,8 +279,7 @@ func handleCommandMatch(args []string) {
 
 	provider, err := promptProviders(providers)
 	if err != nil {
-		log.LogErrorTTY(err.Error())
-		os.Exit(1)
+		log.LogFatalTTY(err.Error())
 	}
 
 	// Get scopes for selected provider
@@ -296,30 +294,25 @@ func handleCommandMatch(args []string) {
 
 	token, err := oidc.GetToken(provider, scopes)
 	if err != nil {
-		log.LogErrorTTY("Could not get token: " + err.Error())
-		os.Exit(1)
+		log.LogFatalTTY("Could not get token: " + err.Error())
 	}
 	if token == "" {
-		log.LogErrorTTY("Received empty token.")
-		os.Exit(1)
+		log.LogFatalTTY("Received empty token.")
 	}
 
 	pubkey, privkey, err := generateEd25519Keys()
 	if err != nil {
-		log.LogErrorTTY("There was an error generating a temporary key pair.")
-		os.Exit(1)
+		log.LogFatalTTY("There was an error generating a temporary key pair.")
 	}
 
 	res, err := caClient.PostHostCertificate(host, pubkey, token)
 	if err != nil {
-		log.LogErrorTTY("CA responded: " + err.Error())
-		os.Exit(1)
+		log.LogFatalTTY("CA responded: " + err.Error())
 	}
 
 	certPk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(res.Certificate))
 	if err != nil {
-		log.LogErrorTTY("Cannot parse certificate.")
-		os.Exit(1)
+		log.LogFatalTTY("Cannot parse certificate.")
 	}
 
 	cert := certPk.(*ssh.Certificate)
@@ -330,8 +323,7 @@ func handleCommandMatch(args []string) {
 		Certificate:  cert,
 		LifetimeSecs: uint32(time.Until(validUntil).Seconds()),
 	}) != nil {
-		log.LogErrorTTY("Cannot add private key and certificate to ssh-agent.")
-		os.Exit(1)
+		log.LogFatalTTY("Cannot add private key and certificate to ssh-agent.")
 	} else {
 		log.LogSuccessTTY(fmt.Sprintf("Received a certificate which is valid until %s", validUntil))
 	}

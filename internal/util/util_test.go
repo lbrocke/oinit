@@ -1,4 +1,4 @@
-package sshutil
+package util
 
 import (
 	"testing"
@@ -69,7 +69,7 @@ func TestMatchesHost(t *testing.T) {
 		assert.Equal(
 			t,
 			tt.matches,
-			matchesHost(tt.args.host, tt.args.port, tt.args.host2, tt.args.port2),
+			MatchesHost(tt.args.host, tt.args.port, tt.args.host2, tt.args.port2),
 		)
 	}
 }

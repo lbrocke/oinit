@@ -52,7 +52,7 @@ func findPaths(userFile string, systemFile string) (FilePaths, error) {
 //
 //	user:   %userprofile%/.ssh/config
 //	system: %programdata%/ssh/ssh_config
-func pathsSSHConfig() (FilePaths, error) {
+func PathsSSHConfig() (FilePaths, error) {
 	return findPaths(SSH_CONFIG_USER, SSH_CONFIG_SYSTEM)
 }
 
@@ -67,7 +67,7 @@ func pathsSSHConfig() (FilePaths, error) {
 //
 //	user:   %userprofile%/.ssh/known_hosts
 //	system: %programdata%/ssh/ssh_known_hosts
-func pathsSSHKnownHosts() (FilePaths, error) {
+func PathsSSHKnownHosts() (FilePaths, error) {
 	return findPaths(SSH_KNOWN_HOSTS_USER, SSH_KNOWN_HOSTS_SYSTEM)
 }
 
@@ -82,6 +82,6 @@ func pathsSSHKnownHosts() (FilePaths, error) {
 //
 //	user:   %userprofile%/.ssh/oinit_hosts
 //	system: %programdata%/ssh/oinit_hosts
-func pathsHosts() (FilePaths, error) {
+func PathsHosts() (FilePaths, error) {
 	return findPaths(HOSTS_USER, HOSTS_SYSTEM)
 }

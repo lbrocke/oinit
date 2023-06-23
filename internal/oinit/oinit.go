@@ -1,35 +1,21 @@
-package sshutil
+package oinit
 
 import (
 	"bufio"
 	"errors"
 	"net"
+	"oinit/internal/sshutil"
+	"oinit/internal/util"
 	"os"
 	"strings"
 )
-
-// matchesHost determines whether given host and port match host2 and port2.
-// host2 may be a wildcard domain in the form of
-//
-//	*.example.com
-//
-// which matches any subdomain of example.com, but not example.com itself.
-func matchesHost(host string, port string, host2 string, port2 string) bool {
-	if strings.HasPrefix(host2, "*.") {
-		root, _ := strings.CutPrefix(host2, "*.")
-
-		return strings.HasSuffix(host, root) && host != root && port == port2
-	} else {
-		return host == host2 && port == port2
-	}
-}
 
 // AddHostUser adds the given host/port and CA to the user's hosts file.
 func AddHostUser(hostport, ca string) error {
 	hostport = strings.ToLower(hostport)
 	ca = strings.ToLower(ca)
 
-	paths, err := pathsHosts()
+	paths, err := sshutil.PathsHosts()
 	if err != nil {
 		return err
 	}
@@ -56,7 +42,7 @@ func AddHostUser(hostport, ca string) error {
 func DeleteHostUser(hostport string) (bool, error) {
 	hostport = strings.ToLower(hostport)
 
-	paths, err := pathsHosts()
+	paths, err := sshutil.PathsHosts()
 	if err != nil {
 		return false, err
 	}
@@ -129,7 +115,7 @@ func GetCA(hostport string) (string, error) {
 			continue
 		}
 
-		if matchesHost(host, port, managedHost, managedPort) {
+		if util.MatchesHost(host, port, managedHost, managedPort) {
 			return ca, nil
 		}
 	}
@@ -140,7 +126,7 @@ func GetCA(hostport string) (string, error) {
 // GetManagedHosts returns all managed hosts (keys) and their respective CAs
 // (values) as a map.
 func GetManagedHosts() (map[string]string, error) {
-	paths, err := pathsHosts()
+	paths, err := sshutil.PathsHosts()
 	if err != nil {
 		return nil, err
 	}

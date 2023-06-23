@@ -1,7 +1,8 @@
-package config
+package caconfig
 
 import (
 	"errors"
+	"oinit/internal/util"
 	"os"
 	"strings"
 	"time"
@@ -210,22 +211,6 @@ func parsePrivateKeyFile(path string) (interface{}, error) {
 	return pk, nil
 }
 
-// matchesHost determines whether the given host matches host2.
-// host2 may be a wildcard domain in the form of
-//
-//	*.example.com
-//
-// which matches any subdomain of example.com, but not example.com itself.
-func matchesHost(host, host2 string) bool {
-	if strings.HasPrefix(host2, "*.") {
-		root, _ := strings.CutPrefix(host2, "*.")
-
-		return strings.HasSuffix(host, root) && host != root
-	} else {
-		return host == host2
-	}
-}
-
 func (c Config) GetInfo(host string) (HostInfo, error) {
 	host = strings.ToLower(host)
 
@@ -233,7 +218,7 @@ func (c Config) GetInfo(host string) (HostInfo, error) {
 		for hostName, caURL := range hostGroup.Hosts {
 			hostName = strings.ToLower(hostName)
 
-			if matchesHost(host, hostName) {
+			if util.MatchesHost(host, "", hostName, "") {
 				return HostInfo{
 					Name:         hostName,
 					URL:          caURL,

@@ -1,39 +1,19 @@
 package oidc
 
 import (
-	"net"
-	"os"
 	"sort"
 
 	"github.com/indigo-dc/liboidcagent-go"
 	"golang.org/x/exp/maps"
 )
 
+const (
+	APP_HINT = "oinit"
+)
+
 type socket struct {
 	AddressEnvVar string
 	Type          string
-}
-
-func AgentIsRunning() bool {
-	// From https://github.com/indigo-dc/liboidcagent-go/blob/master/comm.go
-	sockets := []socket{
-		{
-			"OIDC_SOCK",
-			"unix",
-		},
-		{
-			"OIDC_REMOTE_SOCK",
-			"tcp",
-		},
-	}
-
-	for _, sock := range sockets {
-		if _, err := net.Dial(sock.Type, os.Getenv(sock.AddressEnvVar)); err == nil {
-			return true
-		}
-	}
-
-	return false
 }
 
 func GetConfiguredAccounts() map[string][]string {
@@ -65,7 +45,7 @@ func GetToken(issuer string, scopes []string) (string, error) {
 	req := liboidcagent.TokenRequest{
 		IssuerURL:       issuer,
 		Scopes:          scopes,
-		ApplicationHint: "oinit",
+		ApplicationHint: APP_HINT,
 	}
 
 	res, err := liboidcagent.GetTokenResponse(req)
@@ -73,5 +53,5 @@ func GetToken(issuer string, scopes []string) (string, error) {
 		return "", err
 	}
 
-	return res.Token, err
+	return res.Token, nil
 }

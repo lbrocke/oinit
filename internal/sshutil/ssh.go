@@ -45,7 +45,7 @@ func GenerateKnownHosts(host, port, pubkey string) (string, error) {
 // AddSSHKnownHost adds a "@cert-authority <hostport> <pubkey>" to the users
 // known_hosts file if not already present there or system wide.
 func AddSSHKnownHost(host, port, pubkey string) error {
-	paths, err := pathsSSHKnownHosts()
+	paths, err := PathsSSHKnownHosts()
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func GenerateMatchBlock() string {
 // user's ssh config file, if not already present there or system-wide.
 // Returns boolean that indicates whether the match block was added or not.
 func AddSSHMatchBlock() (bool, error) {
-	paths, err := pathsSSHConfig()
+	paths, err := PathsSSHConfig()
 	if err != nil {
 		return false, err
 	}
