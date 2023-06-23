@@ -3,7 +3,7 @@ module oinit
 go 1.20
 
 require (
-	github.com/gin-gonic/gin v1.9.0
+	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/indigo-dc/liboidcagent-go v0.4.2-0.20230613074241-6bb14c3d9e17
 	github.com/mattn/go-tty v0.0.5
@@ -18,7 +18,6 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
