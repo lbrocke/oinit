@@ -1,3 +1,5 @@
+// Package libmotleycue provides an API client for select calls of motley_cue
+// v0.5.3
 package libmotleycue
 
 import (
@@ -27,6 +29,10 @@ type LoginInfo struct {
 	SSHHost     string `json:"ssh_host"`
 }
 
+type OpInfo struct {
+	Scopes []string `json:"scopes"`
+}
+
 type Credentials struct {
 	CommandLine string `json:"commandline"`
 	Description string `json:"description"`
@@ -36,8 +42,9 @@ type Credentials struct {
 }
 
 type ApiResponseInfo struct {
-	LoginInfo    LoginInfo `json:"login_info"`
-	SupportedOPs []string  `json:"supported_OPs"`
+	LoginInfo    LoginInfo         `json:"login_info"`
+	SupportedOPs []string          `json:"supported_OPs"`
+	OpsInfo      map[string]OpInfo `json:"ops_info"`
 }
 
 type UserStatusState string
@@ -105,6 +112,7 @@ func NewClient(addr string) Client {
 //
 //   - login info
 //   - supported OPs
+//   - OP info
 func (c Client) GetInfo() (ApiResponseInfo, error) {
 	var response ApiResponseInfo
 
