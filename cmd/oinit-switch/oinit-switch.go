@@ -47,8 +47,8 @@ func assertUser() {
 		log.LogFatal(ERR_WRONG_USER)
 	}
 
-	// Program must be executed by OINIT_USER
-	if os.Getuid() != uid {
+	// Program must be executed by OINIT_USER (or root)
+	if os.Getuid() != uid || os.Getuid() != 0 {
 		log.LogFatal(ERR_WRONG_USER)
 	}
 }
