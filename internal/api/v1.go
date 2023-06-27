@@ -2,6 +2,8 @@ package api
 
 import (
 	"crypto/rand"
+	"fmt"
+	"log"
 	"net/http"
 	"oinit/internal/caconfig"
 	"oinit/pkg/libmotleycue"
@@ -59,6 +61,14 @@ func Error(c *gin.Context, code int, msg string) {
 	c.JSON(code, ApiResponseError{
 		Error: msg,
 	})
+}
+
+type customLog struct {
+}
+
+// Custom log format that imitates gin's output
+func (writer customLog) Write(bytes []byte) (int, error) {
+	return fmt.Print("[API] " + time.Now().Format("2006/01/02 - 15:04:05") + " " + string(bytes))
 }
 
 // GetIndex is the handler for GET /
@@ -148,6 +158,9 @@ func GetHost(c *gin.Context) {
 //	@Failure		502		{object}	ApiResponseError
 //	@Router			/{host}/certificate [post]
 func PostHostCertificate(c *gin.Context) {
+	log.SetFlags(0)
+	log.SetOutput(new(customLog))
+
 	var host UriHost
 	var body FormHostCertificate
 
@@ -231,6 +244,8 @@ func PostHostCertificate(c *gin.Context) {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
 	}
+
+	log.Printf("Issued certificate '%s' valid until '%s'", ssh.FingerprintSHA256(cert.Key), time.Unix(int64(cert.ValidBefore-1), 0))
 
 	c.JSON(http.StatusCreated, ApiResponseCertificate{
 		Certificate: strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(&cert)), "\n"),
