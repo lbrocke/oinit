@@ -125,11 +125,9 @@ UNPRIVILEGED:
 		cmd = exec.Command(shell, "-c", sshCmd)
 	} else {
 		cmd = exec.Command(shell, "-il")
-
-		// Only set stdin if interactive login shell
-		cmd.Stdin = os.Stdin
 	}
 
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
