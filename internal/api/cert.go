@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 
 // generateUserCertificate generates a new OpenSSH certificate based on the
 // given public key.
-func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, url string, duration uint64) ssh.Certificate {
+func generateUserCertificate(host string, pubkey ssh.PublicKey, username string, duration uint64) ssh.Certificate {
 	validAfter := uint64(time.Now().Unix())
 	validBefore := validAfter + duration
 
@@ -35,7 +36,7 @@ func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, ur
 		// Set KeyId to "user@host" which can be used by the client to check
 		// which host this certificate was issued for.
 		KeyId:           PRINCIPAL + "@" + host,
-		ValidPrincipals: []string{PRINCIPAL},
+		ValidPrincipals: []string{PRINCIPAL, username},
 		// From OpenSSH PROTOCOL.certkeys:
 		//   "valid after" and "valid before" specify a validity period for the
 		//   certificate. Each represents a time in seconds since 1970-01-01
@@ -45,7 +46,7 @@ func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, ur
 		ValidBefore: validBefore,
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{
-				"force-command": FORCE_COMMAND + " " + token + " " + url,
+				"force-command": FORCE_COMMAND + " " + username,
 			},
 			Extensions: map[string]string{
 				"permit-agent-forwarding": "",
@@ -56,7 +57,7 @@ func generateUserCertificate(host string, pubkey ssh.PublicKey, token string, ur
 }
 
 func hasPrincipal(validPrincipals []string) bool {
-	return len(validPrincipals) == 1 && validPrincipals[0] == PRINCIPAL
+	return slices.Contains(validPrincipals, PRINCIPAL)
 }
 
 func hasForceCommand(criticalOptions map[string]string) bool {

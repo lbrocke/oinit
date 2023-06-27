@@ -237,26 +237,10 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
-	status, err := libmotleycue.NewClient(info.URL).GetUserStatus(body.Token)
-	if err != nil {
-		// Either something went wrong with the HTTP request, or the access
-		// token is not valid
-		Error(c, http.StatusUnauthorized, ERR_UNAUTHORIZED)
-		return
-	}
-
-	switch status.State {
-	case libmotleycue.StateNotDeployed:
-		// User is not yet deployed but still authorized. Deployment is not
-		// a task of the CA, it is instead done later on first ssh login.
-		break
-	case libmotleycue.StateDeployed:
-		break
-	case libmotleycue.StateSuspended:
-		// User is not allowed to login, therefore there is no reason to issue
-		// a certificate.
-		fallthrough
-	default:
+	status, err := libmotleycue.NewClient(info.URL).GetUserDeploy(body.Token)
+	if err != nil || status.State != libmotleycue.StateDeployed {
+		// Either something went wrong with the HTTP request/deployment, the
+		// access token is not valid (e.g. expired) or the user is suspended.
 		Error(c, http.StatusUnauthorized, ERR_UNAUTHORIZED)
 		return
 	}
@@ -270,7 +254,7 @@ func PostHostCertificate(c *gin.Context) {
 		}
 	}
 
-	cert := generateUserCertificate(host.Host, pubkey, body.Token, info.URL, certDuration)
+	cert := generateUserCertificate(host.Host, pubkey, status.Credentials.SSHUser, certDuration)
 
 	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {
