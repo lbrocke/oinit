@@ -71,6 +71,43 @@ func (writer customLog) Write(bytes []byte) (int, error) {
 	return fmt.Print("[API] " + time.Now().Format("2006/01/02 - 15:04:05") + " " + string(bytes))
 }
 
+type providerCache struct {
+	hosts map[string]providerCacheEntry
+}
+
+type providerCacheEntry struct {
+	providers []Provider
+	expires   time.Time
+}
+
+func (c providerCache) Get(host string) ([]Provider, bool) {
+	var providers []Provider
+
+	entry, ok := c.hosts[host]
+	if !ok {
+		return providers, false
+	}
+
+	if time.Now().After(entry.expires) {
+		delete(c.hosts, host)
+
+		return providers, false
+	}
+
+	return entry.providers, true
+}
+
+func (c providerCache) Set(host string, providers []Provider) {
+	c.hosts[host] = providerCacheEntry{
+		providers: providers,
+		expires:   time.Now().Add(10 * time.Minute),
+	}
+}
+
+var cache = providerCache{
+	hosts: make(map[string]providerCacheEntry),
+}
+
 // GetIndex is the handler for GET /
 //
 //	@Summary		Get API version
@@ -117,24 +154,27 @@ func GetHost(c *gin.Context) {
 		return
 	}
 
-	hostInfo, err := libmotleycue.NewClient(info.URL).GetInfo()
-	if err != nil {
-		Error(c, http.StatusBadGateway, ERR_GATEWAY_DOWN)
-		return
-	}
-
-	var providers []Provider
-
-	// Iterate OpsInfo instead of SupportedOPs to only add hosts for which
-	// scopes are defined. Validate that issuer is listed in SupportedOPs
-	// however.
-	for issuer, info := range hostInfo.OpsInfo {
-		if slices.Contains(hostInfo.SupportedOPs, issuer) {
-			providers = append(providers, Provider{
-				URL:    issuer,
-				Scopes: info.Scopes,
-			})
+	providers, ok := cache.Get(info.URL)
+	if !ok {
+		hostInfo, err := libmotleycue.NewClient(info.URL).GetInfo()
+		if err != nil {
+			Error(c, http.StatusBadGateway, ERR_GATEWAY_DOWN)
+			return
 		}
+
+		// Iterate OpsInfo instead of SupportedOPs to only add hosts for which
+		// scopes are defined. Validate that issuer is listed in SupportedOPs
+		// however.
+		for issuer, info := range hostInfo.OpsInfo {
+			if slices.Contains(hostInfo.SupportedOPs, issuer) {
+				providers = append(providers, Provider{
+					URL:    issuer,
+					Scopes: info.Scopes,
+				})
+			}
+		}
+
+		cache.Set(info.URL, providers)
 	}
 
 	c.JSON(http.StatusOK, ApiResponseHost{
