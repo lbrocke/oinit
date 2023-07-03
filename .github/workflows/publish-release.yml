@@ -1,0 +1,25 @@
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+
+name: Create Release
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build artifacts
+        run: make all-cross
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/*
+          body: |
+            Draft
+          draft: true
+          prerelease: false
