@@ -86,7 +86,7 @@ func NewClient(addr string) Client {
 func (c Client) GetHost(host string) (ApiResponseHost, error) {
 	var response ApiResponseHost
 
-	res, err := http.Get(c.addr + API_V1 + "/" + url.PathEscape(host))
+	res, err := http.Get(fmt.Sprintf("%s%s/%s", c.addr, API_V1, url.PathEscape(host)))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
@@ -94,13 +94,13 @@ func (c Client) GetHost(host string) (ApiResponseHost, error) {
 	defer res.Body.Close()
 
 	switch res.StatusCode {
-	case 200:
+	case http.StatusOK:
 		return response, parseResponse(res.Body, &response)
-	case 400:
+	case http.StatusBadRequest:
 		fallthrough
-	case 500:
+	case http.StatusInternalServerError:
 		fallthrough
-	case 502:
+	case http.StatusBadGateway:
 		return response, parseError(res.Body)
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
@@ -119,7 +119,7 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCert
 		return response, err
 	}
 
-	res, err := http.Post(c.addr+API_V1+"/"+host+"/"+url.PathEscape("certificate"), "application/json", bytes.NewReader(reqBody))
+	res, err := http.Post(fmt.Sprintf("%s%s/%s/certificate", c.addr, API_V1, url.PathEscape(host)), "application/json", bytes.NewReader(reqBody))
 	if err != nil {
 		return response, errors.New(ERR_REQUEST)
 	}
@@ -127,15 +127,15 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCert
 	defer res.Body.Close()
 
 	switch res.StatusCode {
-	case 201:
+	case http.StatusCreated:
 		return response, parseResponse(res.Body, &response)
-	case 400:
+	case http.StatusBadRequest:
 		fallthrough
-	case 401:
+	case http.StatusUnauthorized:
 		fallthrough
-	case 500:
+	case http.StatusInternalServerError:
 		fallthrough
-	case 502:
+	case http.StatusBadGateway:
 		return response, parseError(res.Body)
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
