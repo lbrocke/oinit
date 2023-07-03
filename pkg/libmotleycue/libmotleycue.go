@@ -129,7 +129,7 @@ func (c Client) GetInfo() (ApiResponseInfo, error) {
 	defer res.Body.Close()
 
 	switch res.StatusCode {
-	case 200:
+	case http.StatusOK:
 		return response, parseResponse(res.Body, &response)
 	default:
 		return response, fmt.Errorf(ERR_SERVER_RESPONSE_CODE, res.StatusCode)
@@ -157,15 +157,15 @@ func (c Client) getUser(path string, token string) (ApiResponseUserStatus, error
 	defer res.Body.Close()
 
 	switch res.StatusCode {
-	case 200:
+	case http.StatusOK:
 		return response, parseResponse(res.Body, &response)
-	case 401:
+	case http.StatusUnauthorized:
 		fallthrough
-	case 403:
+	case http.StatusForbidden:
 		fallthrough
-	case 404:
+	case http.StatusNotFound:
 		return response, parseError(res.Body)
-	case 422:
+	case http.StatusUnprocessableEntity:
 		// In this case, the response body has a different structure and cannot
 		// be parsed easily into a ApiResponseDetail struct, therefore return
 		// custom error.
