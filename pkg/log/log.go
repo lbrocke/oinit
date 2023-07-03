@@ -15,6 +15,7 @@ const (
 	SYMBOL_WARN    = "!"
 	SYMBOL_INFO    = "i"
 	SYMBOL_NONE    = ""
+	SYMBOL_PROMPT  = "?"
 
 	COLOR_RED    Color = "\u001b[31m"
 	COLOR_GREEN  Color = "\u001b[32m"
@@ -100,5 +101,5 @@ func LogTTY(msg string) {
 }
 
 func PromptTTY(msg string) {
-	log(msg, COLOR_RESET, SYMBOL_NONE, true, false)
+	log(msg, COLOR_GREEN, SYMBOL_PROMPT, true, false)
 }
