@@ -50,9 +50,14 @@ type ApiResponseInfo struct {
 type UserStatusState string
 
 const (
+	// See https://git.scc.kit.edu/feudal/feudalAdapterLdf/-/blob/master/states.md
 	StateDeployed    UserStatusState = "deployed"
 	StateNotDeployed UserStatusState = "not_deployed"
+	StatePending     UserStatusState = "pending"
+	StateRejected    UserStatusState = "rejected"
 	StateSuspended   UserStatusState = "suspended"
+	StateLimited     UserStatusState = "limited"
+	StateUndefined   UserStatusState = "undefined"
 )
 
 // Also called "FeudalResponse" in API docs
