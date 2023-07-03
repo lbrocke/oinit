@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"oinit/internal/caconfig"
-	"oinit/pkg/libmotleycue"
 	"strings"
 	"time"
+
+	"github.com/lbrocke/oinit/internal/caconfig"
+	"github.com/lbrocke/oinit/pkg/libmotleycue"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

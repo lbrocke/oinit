@@ -1,4 +1,4 @@
-module oinit
+module github.com/lbrocke/oinit
 
 go 1.20
 

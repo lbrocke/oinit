@@ -2,10 +2,11 @@ package caconfig
 
 import (
 	"errors"
-	"oinit/internal/util"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/lbrocke/oinit/internal/util"
 
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/ini.v1"

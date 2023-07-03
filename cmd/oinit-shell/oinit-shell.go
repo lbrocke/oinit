@@ -1,10 +1,11 @@
 package main
 
 import (
-	"oinit/pkg/log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/lbrocke/oinit/pkg/log"
 )
 
 func main() {

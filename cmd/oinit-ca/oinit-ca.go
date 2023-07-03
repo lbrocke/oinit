@@ -2,10 +2,11 @@ package main
 
 import (
 	"log"
-	docs "oinit/api/docs"
-	"oinit/internal/api"
-	"oinit/internal/caconfig"
 	"os"
+
+	docs "github.com/lbrocke/oinit/api/docs"
+	"github.com/lbrocke/oinit/internal/api"
+	"github.com/lbrocke/oinit/internal/caconfig"
 
 	"github.com/gin-gonic/gin"
 )

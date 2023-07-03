@@ -1,7 +1,6 @@
 package main
 
 import (
-	"oinit/pkg/passwd"
 	"os"
 	"os/exec"
 	"os/user"
@@ -9,7 +8,8 @@ import (
 	"strings"
 	"syscall"
 
-	"oinit/pkg/log"
+	"github.com/lbrocke/oinit/pkg/log"
+	"github.com/lbrocke/oinit/pkg/passwd"
 )
 
 const (

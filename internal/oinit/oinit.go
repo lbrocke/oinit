@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"net"
-	"oinit/internal/sshutil"
-	"oinit/internal/util"
 	"os"
 	"strings"
+
+	"github.com/lbrocke/oinit/internal/sshutil"
+	"github.com/lbrocke/oinit/internal/util"
 )
 
 // AddHostUser adds the given host/port and CA to the user's hosts file.
