@@ -5,7 +5,7 @@ BUILD_SWITCH=go build -ldflags="-s -w" -o ./bin/${BIN} cmd/oinit-switch/oinit-sw
 
 .PHONY: all oinit oinit-ca oinit-shell oinit-switch oinit-ca-docker swagger clean
 
-all: oinit oinit-ca oinit-switch
+all: oinit oinit-ca oinit-shell oinit-switch
 
 oinit:
 	$(BUILD_CLI)
