@@ -1,0 +1,8 @@
+[Unit]
+Description=oinit Certificate Authority
+
+[Service]
+ExecStart=/usr/sbin/oinit-ca 127.0.0.1:8080 /etc/oinit-ca/config.ini
+
+[Install]
+WantedBy=multi-user.target
