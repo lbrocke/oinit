@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -38,7 +39,7 @@ func dropPrivileges(uid, gid int) {
 }
 
 // getUser returns the uid and gid for the given username. If the user doesn't
-// exist, getUser exists immediately with code 1.
+// exist, getUser exits immediately with code 1.
 func getUser(name string) (int, int) {
 	u, err := user.Lookup(name)
 	if err != nil {
@@ -56,8 +57,8 @@ func getUser(name string) (int, int) {
 	return uid, gid
 }
 
-// Returns a list of all environment variables (from os.Environ()) that start
-// with LC_ or lc_
+// getLocaleEnvs returns a list of all environment variables (from os.Environ())
+// that start with LC_ or lc_.
 func getLocaleEnvs() []string {
 	var envs []string
 
@@ -72,12 +73,19 @@ func getLocaleEnvs() []string {
 	return envs
 }
 
-// Usage: "oinit-switch <target>" with target begin the name of user to switch
-// to.
+// This program must be invoked using "oinit-switch <target>".
+// It will, as the user <target>, spawn an interactive login shell or execute
+// the command given in the SSH_ORIGINAL_COMMAND environment variable, if set.
+//
+// For this, root permissions are required. Therefore this program must be
+// either executed as root or (this is the intended way) by having the setuid
+// bit set on the executable file.
+//
+// Only the user "oinit" as well as root are allowed to switch to all other
+// users (except to root).
+// Normal users are only allowed to switch to themselves.
 func main() {
-	// root permissions are required in any case.
-	// Either the process owner is root or process was started with root
-	// permissions (via setuid bit on executable).
+	// Verify that this program is executed with root permissions.
 	if os.Geteuid() != 0 {
 		log.LogFatal(ERR_MISSING_PERMISSION)
 	}
@@ -87,10 +95,9 @@ func main() {
 	}
 
 	target := os.Args[1]
-
 	targetUid, targetGid := getUser(target)
 
-	// Switching to root is not allowed.
+	// Switching to root is not allowed for anybody.
 	if targetUid == 0 || targetGid == 0 {
 		log.LogFatal(ERR_NOT_ALLOWED)
 	}
@@ -98,12 +105,14 @@ func main() {
 	oinitUid, _ := getUser(OINIT_USER)
 
 	if os.Getuid() == 0 || os.Getuid() == oinitUid || os.Getuid() == targetUid {
-		// Only the "oinit" user is allowed to switch to anyone (except to root).
-		// Also allow a non-root user to switch to himself/herself.
+		// Only the user "oinit" as well as root are allowed to switch to all
+		// other users (except to root).
+		// Normal users are only allowed to switch to themselves.
 		dropPrivileges(targetUid, targetGid)
 		goto UNPRIVILEGED
 	}
 
+	// Exit if no jump to UNPRIVILEGED occured.
 	log.LogFatal(ERR_NOT_ALLOWED)
 
 UNPRIVILEGED:
@@ -113,36 +122,40 @@ UNPRIVILEGED:
 		log.LogFatal(ERR_DROP_PRIVILEGES)
 	}
 
+	// The raw value from /etc/passwd, e.g. '/bin/bash'
 	shell := passwd.Shell(target, DEFAULT_SHELL)
 
-	var cmd *exec.Cmd
+	// syscall.Exec() requires full path
+	argv0, err := exec.LookPath(shell)
+	if err != nil {
+		log.LogFatal(ERR_NOT_ALLOWED)
+	}
+
+	// Shell name without path, e.g. 'bash'
+	shellName := filepath.Base(argv0)
+
+	var argv []string
 
 	// Check if SSH_ORIGINAL_COMMAND is set, if yes run command instead of
 	// spawning an interactive shell.
 	if sshCmd, ok := os.LookupEnv("SSH_ORIGINAL_COMMAND"); ok {
 		// Use user's shell to execute command so that nice-to-have's like glob
-		// expansions work.
-		cmd = exec.Command(shell, "-c", sshCmd)
+		// expansions and built-in functions work.
+		argv = []string{shellName, "-c", sshCmd}
 	} else {
-		cmd = exec.Command(shell, "-il")
+		// Invoke login shell by prepending "-"
+		argv = []string{"-" + shellName}
 	}
 
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	targetUser, _ := user.Lookup(target)
 
-	// Override environment variables as setuid/setgid and exec.Command() don't
-	// do this automatically. Only certain required or useful variables
-	// inspired by login(1) are set or copied from this process.
-	// From login(1):
+	// Only set certain required or useful environment variables similar to
+	// login(1), in addition to locale (LC_*) and two OpenSSH-defined variables:
 	//   The environment variable values for $HOME, $USER, $SHELL, $PATH,
 	//   $LOGNAME, and $MAIL are set according to the appropriate fields in the
 	//   password entry. $PATH defaults to [..] for normal users, and to [..]
 	//   for root, if not otherwise configured.
-
-	targetUser, _ := user.Lookup(target)
-
-	cmd.Env = append([]string{
+	envv := append([]string{
 		"USER=" + targetUser.Username,
 		"LOGNAME=" + targetUser.Username,
 		"HOME=" + targetUser.HomeDir,
@@ -157,11 +170,7 @@ UNPRIVILEGED:
 	// Required, as setting PWD isn't enough
 	os.Chdir(targetUser.HomeDir)
 
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitErr.ExitCode())
-		}
-
+	if err := syscall.Exec(argv0, argv, envv); err != nil {
 		os.Exit(1)
 	}
 }
