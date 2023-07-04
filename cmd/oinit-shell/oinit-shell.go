@@ -4,42 +4,43 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/lbrocke/oinit/pkg/log"
 )
 
+const (
+	FORCE_COMMAND = "oinit-switch"
+
+	ERR_PROHIBITED = "This user does not provide interactive access."
+	ERR_INTERNAL   = "An error occured."
+)
+
+// This programm will be invoked by OpenSSH as
+//
+//	oinit-shell -c 'oinit-switch <target>'
+//
+// Ensure that only FORCE_COMMAND can be run and no interactive login shell is
+// provided.
 func main() {
-	// This programm will be invoked by OpenSSH as
-	//   oinit-shell -c 'oinit-switch <name>'
-	// Make sure that no other command can be run and that no interactive shell
-	// is provided.
-
-	if len(os.Args) != 3 || os.Args[1] != "-c" ||
-		!strings.HasPrefix(os.Args[2], "oinit-switch ") {
-		// Make sure that shell was invoked using "oinit-shell -c 'oinit-switch ...'",
-		// otherwise exit which will terminate the SSH connection.
-		log.LogFatal("This user does not provide interactive access.")
+	if len(os.Args) != 3 || os.Args[1] != "-c" {
+		log.LogFatal(ERR_PROHIBITED)
 	}
 
-	// Make sure 'oinit-switch' exists, then run it and return exit code.
-	if _, err := exec.LookPath("oinit-switch"); err != nil {
-		os.Exit(1)
+	command := os.Args[2]
+	argv := strings.Fields(command)
+
+	if !strings.HasPrefix(command, FORCE_COMMAND) || len(argv) != 2 {
+		log.LogFatal(ERR_PROHIBITED)
 	}
 
-	// os.Args[2] contains "oinit-switch ...", split it at whitespace
-	// and pass it into exec.Command()
-	args := strings.Fields(os.Args[2])
+	// syscall.Exec() requires full path
+	path, err := exec.LookPath(argv[0])
+	if err != nil {
+		log.LogFatal(ERR_INTERNAL)
+	}
 
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitErr.ExitCode())
-		}
-
-		os.Exit(1)
+	if err := syscall.Exec(path, argv, os.Environ()); err != nil {
+		log.LogFatal(ERR_INTERNAL)
 	}
 }
