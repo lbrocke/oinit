@@ -1,18 +1,25 @@
 # oinit
-> Certificate-based single sign on for OpenSSH
+> Certificate-based OpenSSH for Federated Identities
 
-This repository contains a collection of programs to enable single sign-on in OpenSSH.
+This repository contains a collection of programs to enable OpenSSH login for federated identities based on certificates.
 
-## Building
+Please refer to the [Wiki](https://github.com/lbrocke/oinit/wiki) to learn about installation and configuration.
+
+## Development
 
 ```sh
 # Client application
 $ make oinit
 
+# oinit-shell and oinit-switch
+$ make oinit-shell oinit-switch
+
 # Server application (CA)
 $ make oinit-ca
 ```
 
-## Development
-
 When changing the REST API annotations, run `make swagger` to generate the Swagger files.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
