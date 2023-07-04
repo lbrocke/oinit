@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	API_VERSION = "0.1.0"
+	API_VERSION = "1.0.0"
 
 	ERR_BAD_BODY       = "Request body is malformed."
 	ERR_UNKNOWN_HOST   = "Unknown host."
