@@ -49,7 +49,7 @@ type FormHostCertificate struct {
 
 // parseError tries to unmarshal the given response body into
 // ApiResponseError and returns the enclosed error message as a new error. If
-// reading from responseBody or unmarshaling fails, this function return a
+// reading from responseBody or unmarshalling fails, this function return a
 // custom error messages.
 func parseError(responseBody io.ReadCloser) error {
 	var response ApiResponseError

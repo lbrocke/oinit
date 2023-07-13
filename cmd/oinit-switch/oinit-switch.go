@@ -112,7 +112,7 @@ func main() {
 		goto UNPRIVILEGED
 	}
 
-	// Exit if no jump to UNPRIVILEGED occured.
+	// Exit if no jump to UNPRIVILEGED occurred.
 	log.LogFatal(ERR_NOT_ALLOWED)
 
 UNPRIVILEGED:

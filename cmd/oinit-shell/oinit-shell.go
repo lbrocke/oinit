@@ -13,10 +13,10 @@ const (
 	FORCE_COMMAND = "oinit-switch"
 
 	ERR_PROHIBITED = "This user does not provide interactive access."
-	ERR_INTERNAL   = "An error occured."
+	ERR_INTERNAL   = "An error occurred."
 )
 
-// This programm will be invoked by OpenSSH as
+// This program will be invoked by OpenSSH as
 //
 //	oinit-shell -c 'oinit-switch <target>'
 //

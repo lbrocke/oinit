@@ -205,7 +205,7 @@ func promptProviders(providers []string) (string, error) {
 	return providers[selected-1], nil
 }
 
-// generateEd25519Keys generates a new ED25519 keypair and returns the
+// generateEd25519Keys generates a new ED25519 key pair and returns the
 // marshalled public key (ssh-ed25519 AAA...) as well as private key.
 func generateEd25519Keys() (string, ed25519.PrivateKey, error) {
 	pubkey, privkey, err := ed25519.GenerateKey(nil)

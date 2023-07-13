@@ -33,7 +33,7 @@ func GenerateKnownHosts(host, port, pubkey string) (string, error) {
 		combinedHost = "[" + host + "]:" + port
 	}
 
-	// Strip comment from pubkey if present
+	// Strip comment from public key if present
 	parts := strings.Split(pubkey, " ")
 	if len(parts) != 2 && len(parts) != 3 {
 		return "", errors.New("invalid pubkey format")
@@ -42,7 +42,7 @@ func GenerateKnownHosts(host, port, pubkey string) (string, error) {
 	return "@cert-authority " + combinedHost + " " + strings.Join(parts[0:2], " "), nil
 }
 
-// AddSSHKnownHost adds a "@cert-authority <hostport> <pubkey>" to the users
+// AddSSHKnownHost adds a "@cert-authority <hostport> <public key>" to the users
 // known_hosts file if not already present there or system wide.
 func AddSSHKnownHost(host, port, pubkey string) error {
 	paths, err := PathsSSHKnownHosts()
@@ -104,7 +104,7 @@ func AddSSHMatchBlock() (bool, error) {
 		return false, err
 	}
 
-	// Search for occurence of 'Match exec ...'
+	// Search for occurrence of 'Match exec ...'
 	block := GenerateMatchBlock()
 	search := strings.Split(block, "\n")[0]
 

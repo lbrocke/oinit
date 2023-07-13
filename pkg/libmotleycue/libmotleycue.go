@@ -73,7 +73,7 @@ type Client struct {
 
 // parseError tries to unmarshal the given response body into
 // ApiResponseDetail and returns the enclosed error message as a new error. If
-// reading from responseBody or unmarshaling fails, this function return a
+// reading from responseBody or unmarshalling fails, this function return a
 // custom error messages.
 func parseError(responseBody io.ReadCloser) error {
 	var response ApiResponseDetail
@@ -82,7 +82,7 @@ func parseError(responseBody io.ReadCloser) error {
 		return errors.New(ERR_RESPONSE_BODY)
 	}
 
-	// Make sure the .Detail field was filled after Unmarshalling the JSON data.
+	// Make sure the .Detail field was filled after unmarshalling the JSON data.
 	if response.Detail == "" {
 		response.Detail = ERR_UNEXPECTED_ERROR
 	}
@@ -182,7 +182,7 @@ func (c Client) getUser(path string, token string) (ApiResponseUserStatus, error
 //   - state: one of the supported states, such as deployed, not_deployed, suspended.
 //   - message: could contain additional information, such as the local username
 //
-// Requires an authorised user.
+// Requires an authorized user.
 func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
 	return c.getUser("/user/get_status", token)
 }
@@ -190,7 +190,7 @@ func (c Client) GetUserStatus(token string) (ApiResponseUserStatus, error) {
 // GetUserDeploy calls GET /user/deploy.
 //
 // Provision a local account.
-// Requires an authorised user.
+// Requires an authorized user.
 func (c Client) GetUserDeploy(token string) (ApiResponseUserStatus, error) {
 	return c.getUser("/user/deploy", token)
 }
