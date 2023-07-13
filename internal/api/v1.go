@@ -54,8 +54,8 @@ type UriHost struct {
 }
 
 type FormHostCertificate struct {
-	Pubkey string `json:"pubkey" binding:"required"`
-	Token  string `json:"token" binding:"required"`
+	Publickey string `json:"publickey" binding:"required"`
+	Token     string `json:"token" binding:"required"`
 }
 
 func Error(c *gin.Context, code int, msg string) {
@@ -212,7 +212,7 @@ func PostHostCertificate(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Pubkey))
+	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Publickey))
 	if err != nil {
 		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
 		return
