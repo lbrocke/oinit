@@ -1,0 +1,11 @@
+# syntax=docker/dockerfile:1
+
+FROM alpine
+
+# This Dockerfile copies the binary from dist/ instead of
+# building it inside the container.
+COPY oinit-ca /app/oinit-ca
+
+RUN mkdir -p /etc/oinit-ca
+
+ENTRYPOINT /app/oinit-ca 0.0.0.0:80 /etc/oinit-ca/config.ini
