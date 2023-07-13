@@ -43,8 +43,8 @@ type Provider struct {
 }
 
 type FormHostCertificate struct {
-	Pubkey string `json:"pubkey"`
-	Token  string `json:"token"`
+	Publickey string `json:"publickey"`
+	Token     string `json:"token"`
 }
 
 // parseError tries to unmarshal the given response body into
@@ -112,8 +112,8 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCert
 	var response ApiResponseCertificate
 
 	reqBody, err := json.Marshal(FormHostCertificate{
-		Pubkey: pubkey,
-		Token:  token,
+		Publickey: pubkey,
+		Token:     token,
 	})
 	if err != nil {
 		return response, err
