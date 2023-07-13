@@ -1,4 +1,4 @@
-OUT=./bin/
+OUT=./bin
 
 .PHONY: all oinit oinit-ca oinit-shell oinit-switch oinit-ca-docker swagger clean
 
