@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lbrocke/oinit/internal/caconfig"
+	"github.com/lbrocke/oinit/internal/util"
 	"github.com/lbrocke/oinit/pkg/libmotleycue"
 
 	"github.com/gin-gonic/gin"
@@ -72,42 +73,7 @@ func (writer customLog) Write(bytes []byte) (int, error) {
 	return fmt.Print("[API] " + time.Now().Format("2006/01/02 - 15:04:05") + " " + string(bytes))
 }
 
-type providerCache struct {
-	hosts map[string]providerCacheEntry
-}
-
-type providerCacheEntry struct {
-	providers []Provider
-	expires   time.Time
-}
-
-func (c providerCache) Get(host string) ([]Provider, bool) {
-	var providers []Provider
-
-	entry, ok := c.hosts[host]
-	if !ok {
-		return providers, false
-	}
-
-	if time.Now().After(entry.expires) {
-		delete(c.hosts, host)
-
-		return providers, false
-	}
-
-	return entry.providers, true
-}
-
-func (c providerCache) Set(host string, providers []Provider) {
-	c.hosts[host] = providerCacheEntry{
-		providers: providers,
-		expires:   time.Now().Add(10 * time.Minute),
-	}
-}
-
-var cache = providerCache{
-	hosts: make(map[string]providerCacheEntry),
-}
+var cache = util.NewTimedCache[string, []Provider](10 * time.Minute)
 
 // GetIndex is the handler for GET /
 //
