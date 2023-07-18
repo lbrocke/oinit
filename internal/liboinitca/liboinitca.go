@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/lbrocke/oinit/internal/api"
 )
 
 const (
@@ -24,35 +26,12 @@ type Client struct {
 	addr string
 }
 
-type ApiResponseError struct {
-	Error string `json:"error"`
-}
-
-type ApiResponseHost struct {
-	PublicKey string     `json:"publickey"`
-	Providers []Provider `json:"providers"`
-}
-
-type ApiResponseCertificate struct {
-	Certificate string `json:"certificate"`
-}
-
-type Provider struct {
-	URL    string   `json:"url"`
-	Scopes []string `json:"scopes"`
-}
-
-type FormHostCertificate struct {
-	Publickey string `json:"publickey"`
-	Token     string `json:"token"`
-}
-
 // parseError tries to unmarshal the given response body into
 // ApiResponseError and returns the enclosed error message as a new error. If
 // reading from responseBody or unmarshalling fails, this function return a
 // custom error messages.
 func parseError(responseBody io.ReadCloser) error {
-	var response ApiResponseError
+	var response api.ApiResponseError
 
 	if parseResponse(responseBody, &response) != nil {
 		return errors.New(ERR_RESPONSE_BODY)
@@ -83,8 +62,8 @@ func NewClient(addr string) Client {
 }
 
 // Return the CA public key and supported OpenID Connect providers.
-func (c Client) GetHost(host string) (ApiResponseHost, error) {
-	var response ApiResponseHost
+func (c Client) GetHost(host string) (api.ApiResponseHost, error) {
+	var response api.ApiResponseHost
 
 	res, err := http.Get(fmt.Sprintf("%s%s/%s", c.addr, API_V1, url.PathEscape(host)))
 	if err != nil {
@@ -108,10 +87,10 @@ func (c Client) GetHost(host string) (ApiResponseHost, error) {
 }
 
 // Generate and return a new SSH certificate using the given access token.
-func (c Client) PostHostCertificate(host, pubkey, token string) (ApiResponseCertificate, error) {
-	var response ApiResponseCertificate
+func (c Client) PostHostCertificate(host, pubkey, token string) (api.ApiResponseCertificate, error) {
+	var response api.ApiResponseCertificate
 
-	reqBody, err := json.Marshal(FormHostCertificate{
+	reqBody, err := json.Marshal(api.FormHostCertificate{
 		Publickey: pubkey,
 		Token:     token,
 	})

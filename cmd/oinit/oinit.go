@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/lbrocke/oinit/internal/dnsutil"
+	"github.com/lbrocke/oinit/internal/liboinitca"
 	"github.com/lbrocke/oinit/internal/oidc"
 	"github.com/lbrocke/oinit/internal/oinit"
 	"github.com/lbrocke/oinit/internal/sshutil"
-	"github.com/lbrocke/oinit/pkg/liboinitca"
 	"github.com/lbrocke/oinit/pkg/log"
 
 	"github.com/mattn/go-tty"
