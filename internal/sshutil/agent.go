@@ -41,31 +41,62 @@ func GetAgent() (agent.ExtendedAgent, error) {
 	return agent.NewClient(sshAgentSock), err
 }
 
-func AgentHasCertificate(agent agent.ExtendedAgent, host string) (bool, error) {
+// agentGetOinitCertificates returns a slice of all certificates in the agent
+// that have been issued by oinit for the given host.
+//
+// The KeyId field, which is set to oinit@<host> by oinit-ca, as well as the
+// occurrences of "oinit" in the ValidPrincipals field are used to identify
+// certificates issued by oinit.
+func agentGetOinitCertificates(agent agent.ExtendedAgent, host string) ([]ssh.Certificate, error) {
+	var certificates []ssh.Certificate
+
 	keys, err := agent.List()
 	if err != nil {
-		return false, err
+		return certificates, err
 	}
 
-	// Certificates issued by oinit-ca will have the KeyId field set to "user@host"
-	findKeyId := PRINCIPAL + "@" + strings.ToLower(host)
+	keyId := PRINCIPAL + "@" + strings.ToLower(host)
 
 	for _, key := range keys {
 		pk, err := ssh.ParsePublicKey(key.Blob)
 		if err != nil {
-			// This case should never happen
-			return false, err
+			// This should never happen
+			continue
 		}
 
 		cert := pk.(*ssh.Certificate)
 
-		// A certificate listing the correct key id and principal is used
-		// as criteria for a matching certificate.
-		if cert.KeyId == findKeyId &&
-			slices.Contains(cert.ValidPrincipals, PRINCIPAL) {
-			return true, nil
+		if cert.KeyId == keyId && slices.Contains(cert.ValidPrincipals, PRINCIPAL) {
+			certificates = append(certificates, *cert)
 		}
 	}
 
-	return false, nil
+	return certificates, nil
+}
+
+// AgentHasCertificate returns a bool indicating whether a certificate issued
+// by oinit-ca for the given host is currently present in the agent.
+// An error is returned when communication with the agent is not possible, for
+// example if it isn't running.
+func AgentHasCertificate(agent agent.ExtendedAgent, host string) (bool, error) {
+	certificates, err := agentGetOinitCertificates(agent, host)
+
+	return len(certificates) != 0, err
+}
+
+// AgentRemoveCertificates removes all certificates issued by oinit-ca for the
+// given host from the agent.
+// An error is returned when communication with the agent is not possible, for
+// example if it isn't running.
+func AgentRemoveCertificates(agent agent.ExtendedAgent, host string) error {
+	certificates, err := agentGetOinitCertificates(agent, host)
+	if err != nil {
+		return err
+	}
+
+	for _, cert := range certificates {
+		agent.Remove(&cert)
+	}
+
+	return nil
 }

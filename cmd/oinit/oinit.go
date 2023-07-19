@@ -131,17 +131,26 @@ func handleCommandDelete(args []string) {
 
 	hostport := args[0]
 
-	found, err := oinit.DeleteHostUser(hostport)
+	host, _, err := net.SplitHostPort(hostport)
 	if err != nil {
-		log.LogError("Could not delete host: " + err.Error())
-		return
+		host = strings.TrimSpace(hostport)
 	}
 
-	if !found {
-		log.LogError(hostport + " is either not managed by oinit, or configured system-wide.")
-	} else {
-		log.LogSuccess(hostport + " was deleted.")
+	found, err := oinit.DeleteHostUser(hostport)
+	if err != nil {
+		log.LogFatal("Could not delete host: " + err.Error())
 	}
+	if !found {
+		log.LogFatal(hostport + " is either not managed by oinit, or configured system-wide.")
+	}
+
+	if sshutil.AgentIsRunning() {
+		sshAgent, _ := sshutil.GetAgent()
+
+		sshutil.AgentRemoveCertificates(sshAgent, host)
+	}
+
+	log.LogSuccess(hostport + " was deleted.")
 }
 
 func handleCommandList() {
