@@ -229,13 +229,6 @@ func PostHostCertificate(c *gin.Context) {
 		return
 	}
 
-	// Make sure that certificate is valid and (this *very* is important!) has
-	// the force-command option set to the correct (non-empty) value.
-	if !validateUserCertificate(cert, info.UserCAPublicKey) {
-		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
-		return
-	}
-
 	log.Printf("Issued certificate '%s' valid until '%s'", ssh.FingerprintSHA256(cert.Key), time.Unix(int64(cert.ValidBefore-1), 0))
 
 	c.JSON(http.StatusCreated, ApiResponseCertificate{
