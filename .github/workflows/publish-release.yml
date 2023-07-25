@@ -1,6 +1,12 @@
+# This workflow will create a new Github release whenever a tag following
+# semantic versioning is pushed to the main branch.
+
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    tags:
+      - v*.*.*
+    branches:
+      - main
 
 name: Create Release
 
@@ -24,6 +30,8 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release -f .goreleaser-release.yaml --clean
+          args: release --clean
         env:
+          REGISTRY: "ghcr.io"
+          IMAGE: "lbrocke/oinit-ca"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

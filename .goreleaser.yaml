@@ -1,6 +1,6 @@
 release:
   draft: true
-  prerelease: true
+  prerelease: false
 
 builds:
   - id: oinit
@@ -197,13 +197,11 @@ dockers:
     ids:
       - oinit-ca
     image_templates:
-      - "ghcr.io/lbrocke/oinit-ca:unstable"
-      - "ghcr.io/lbrocke/oinit-ca:{{ .Tag }}"
+      - '{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:latest'
+      - '{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:{{ .Tag }}'
     dockerfile: "build/Dockerfile.goreleaser"
     build_flag_templates:
       - "--pull"
-      - "--label=org.opencontainers.image.title=oinit-ca"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.licenses=MIT"
