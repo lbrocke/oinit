@@ -25,12 +25,12 @@ definitions:
     type: object
   api.FormHostCertificate:
     properties:
-      pubkey:
+      publickey:
         type: string
       token:
         type: string
     required:
-    - pubkey
+    - publickey
     - token
     type: object
   api.Provider:
@@ -78,6 +78,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/api.ApiResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ApiResponseError'
         "500":
           description: Internal Server Error
           schema:
@@ -119,6 +123,10 @@ paths:
             $ref: '#/definitions/api.ApiResponseError'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ApiResponseError'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/api.ApiResponseError'
         "500":

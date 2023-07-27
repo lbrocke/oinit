@@ -63,6 +63,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.ApiResponseError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -126,6 +132,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.ApiResponseError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ApiResponseError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -184,11 +196,11 @@ const docTemplate = `{
         "api.FormHostCertificate": {
             "type": "object",
             "required": [
-                "pubkey",
+                "publickey",
                 "token"
             ],
             "properties": {
-                "pubkey": {
+                "publickey": {
                     "type": "string"
                 },
                 "token": {

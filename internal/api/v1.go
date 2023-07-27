@@ -96,6 +96,7 @@ func GetIndex(c *gin.Context) {
 //	@Param			host	path		string	true	"Host"	example("example.com")
 //	@Success		200		{object}	ApiResponseHost
 //	@Failure		400		{object}	ApiResponseError
+//	@Failure		404		{object}	ApiResponseError
 //	@Failure		500		{object}	ApiResponseError
 //	@Failure		502		{object}	ApiResponseError
 //	@Router			/{host} [get]
@@ -117,7 +118,7 @@ func GetHost(c *gin.Context) {
 
 	info, err := conf.GetInfo(host.Host)
 	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
+		Error(c, http.StatusNotFound, ERR_UNKNOWN_HOST)
 		return
 	}
 
@@ -161,6 +162,7 @@ func GetHost(c *gin.Context) {
 //	@Success		201		{object}	ApiResponseCertificate
 //	@Failure		400		{object}	ApiResponseError
 //	@Failure		401		{object}	ApiResponseError
+//	@Failure		404		{object}	ApiResponseError
 //	@Failure		500		{object}	ApiResponseError
 //	@Failure		502		{object}	ApiResponseError
 //	@Router			/{host}/certificate [post]
@@ -178,12 +180,6 @@ func PostHostCertificate(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Publickey))
-	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
-		return
-	}
-
 	conf, ok := c.MustGet("config").(caconfig.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
@@ -192,7 +188,13 @@ func PostHostCertificate(c *gin.Context) {
 
 	info, err := conf.GetInfo(host.Host)
 	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
+		Error(c, http.StatusNotFound, ERR_UNKNOWN_HOST)
+		return
+	}
+
+	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Publickey))
+	if err != nil {
+		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
 		return
 	}
 

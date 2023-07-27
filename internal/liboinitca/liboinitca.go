@@ -77,6 +77,8 @@ func (c Client) GetHost(host string) (api.ApiResponseHost, error) {
 		return response, parseResponse(res.Body, &response)
 	case http.StatusBadRequest:
 		fallthrough
+	case http.StatusNotFound:
+		fallthrough
 	case http.StatusInternalServerError:
 		fallthrough
 	case http.StatusBadGateway:
@@ -111,6 +113,8 @@ func (c Client) PostHostCertificate(host, pubkey, token string) (api.ApiResponse
 	case http.StatusBadRequest:
 		fallthrough
 	case http.StatusUnauthorized:
+		fallthrough
+	case http.StatusNotFound:
 		fallthrough
 	case http.StatusInternalServerError:
 		fallthrough
