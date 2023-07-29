@@ -4,16 +4,14 @@ import (
 	"time"
 )
 
-func NewTimedCache[K comparable, E any](expires time.Duration) *TimedCache[K, E] {
+func NewTimedCache[K comparable, E any]() *TimedCache[K, E] {
 	return &TimedCache[K, E]{
 		entries: make(map[K]timedCacheEntry[E]),
-		expires: expires,
 	}
 }
 
 type TimedCache[K comparable, E any] struct {
 	entries map[K]timedCacheEntry[E]
-	expires time.Duration
 }
 
 type timedCacheEntry[E any] struct {
@@ -38,9 +36,9 @@ func (c TimedCache[K, E]) Get(key K) (E, bool) {
 	return entry.content, true
 }
 
-func (c TimedCache[K, E]) Set(key K, content E) {
+func (c TimedCache[K, E]) Set(key K, content E, duration time.Duration) {
 	c.entries[key] = timedCacheEntry[E]{
 		content: content,
-		expires: time.Now().Add(c.expires),
+		expires: time.Now().Add(duration * time.Second),
 	}
 }
