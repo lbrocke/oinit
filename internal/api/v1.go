@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lbrocke/oinit/internal/caconfig"
+	"github.com/lbrocke/oinit/internal/config"
 	"github.com/lbrocke/oinit/internal/util"
 	"github.com/lbrocke/oinit/pkg/libmotleycue"
 
@@ -110,7 +110,7 @@ func GetHost(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	conf, ok := c.MustGet("config").(caconfig.Config)
+	conf, ok := c.MustGet("config").(config.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
@@ -180,7 +180,7 @@ func PostHostCertificate(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	conf, ok := c.MustGet("config").(caconfig.Config)
+	conf, ok := c.MustGet("config").(config.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return

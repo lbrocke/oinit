@@ -1,4 +1,4 @@
-package caconfig
+package config
 
 import (
 	"errors"
@@ -53,7 +53,7 @@ type HostInfo struct {
 	Keys
 }
 
-func LoadConfig(path string) (Config, error) {
+func Load(path string) (Config, error) {
 	var conf Config
 	var defOptions DefaultOptions
 
