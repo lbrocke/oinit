@@ -64,9 +64,14 @@ func agentGetOinitCertificates(agent agent.ExtendedAgent, host string) ([]ssh.Ce
 			continue
 		}
 
-		cert := pk.(*ssh.Certificate)
+		cert, ok := pk.(*ssh.Certificate)
+		if !ok {
+			// pk is not a certificate but a normal public key
+			continue
+		}
 
-		if cert.KeyId == keyId && slices.Contains(cert.ValidPrincipals, PRINCIPAL) {
+		if cert.CertType == ssh.UserCert && cert.KeyId == keyId &&
+			slices.Contains(cert.ValidPrincipals, PRINCIPAL) {
 			certificates = append(certificates, *cert)
 		}
 	}
