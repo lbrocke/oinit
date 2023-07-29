@@ -3,8 +3,8 @@ package caconfig
 import (
 	"errors"
 	"os"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/lbrocke/oinit/internal/util"
 
@@ -122,7 +122,7 @@ func LoadConfig(path string) (Config, error) {
 		return conf, errors.New("could not open and parse keys")
 	}
 
-	if parseCertValidities(&conf) != nil {
+	if parseCertValidity(&conf) != nil {
 		return conf, errors.New("could not parse certificate validities")
 	}
 
@@ -169,7 +169,7 @@ func loadKeys(conf *Config) error {
 	return nil
 }
 
-func parseCertValidities(conf *Config) error {
+func parseCertValidity(conf *Config) error {
 	for i, group := range conf.HostGroups {
 		validity := group.CertValidity
 
@@ -178,12 +178,12 @@ func parseCertValidities(conf *Config) error {
 			continue
 		}
 
-		dur, err := time.ParseDuration(validity)
+		dur, err := strconv.Atoi(validity)
 		if err != nil {
 			return err
 		}
 
-		conf.HostGroups[i].CertDuration = int(dur.Seconds())
+		conf.HostGroups[i].CertDuration = dur
 	}
 
 	return nil
