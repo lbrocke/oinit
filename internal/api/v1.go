@@ -73,7 +73,7 @@ func (writer customLog) Write(bytes []byte) (int, error) {
 	return fmt.Print("[API] " + time.Now().Format("2006/01/02 - 15:04:05") + " " + string(bytes))
 }
 
-var cache = util.NewTimedCache[string, []Provider](10 * time.Minute)
+var cache = util.NewTimedCache[string, []Provider]()
 
 // GetIndex is the handler for GET /
 //
@@ -142,7 +142,7 @@ func GetHost(c *gin.Context) {
 			}
 		}
 
-		cache.Set(info.URL, providers)
+		cache.Set(info.URL, providers, time.Duration(info.CacheDuration))
 	}
 
 	c.JSON(http.StatusOK, ApiResponseHost{
@@ -219,11 +219,11 @@ func PostHostCertificate(c *gin.Context) {
 	// given token as "valid before" date.
 	if certDuration <= 0 {
 		if exp, err := token.Claims.GetExpirationTime(); err == nil {
-			certDuration = uint64(time.Until(exp.Time).Seconds())
+			certDuration = int(time.Until(exp.Time).Seconds())
 		}
 	}
 
-	cert := generateUserCertificate(host.Host, pubkey, status.Credentials.SSHUser, certDuration)
+	cert := generateUserCertificate(host.Host, pubkey, status.Credentials.SSHUser, uint64(certDuration))
 
 	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {

@@ -3,8 +3,8 @@ package caconfig
 import (
 	"errors"
 	"os"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/lbrocke/oinit/internal/util"
 
@@ -21,7 +21,8 @@ type DefaultOptions struct {
 	PathHostCAPublicKey  string `ini:"host-ca-pubkey"`
 	PathUserCAPrivateKey string `ini:"user-ca-privkey"`
 	PathUserCAPublicKey  string `ini:"user-ca-pubkey"`
-	CertValidity         string `ini:"cert-validity"`
+	CertValidity         string `ini:"cert-validity"` // allows non-int values, parsed manually
+	CacheDuration        int    `ini:"cache-duration"`
 }
 
 type Keys struct {
@@ -34,7 +35,7 @@ type Keys struct {
 type HostGroup struct {
 	DefaultOptions
 	Keys
-	CertDuration uint64
+	CertDuration int
 	Name         string
 	Hosts        map[string]string
 }
@@ -43,10 +44,12 @@ type Config struct {
 	HostGroups []HostGroup
 }
 
+// HostInfo is returned from the GetInfo function
 type HostInfo struct {
-	Name         string
-	URL          string
-	CertDuration uint64
+	Name          string
+	URL           string
+	CertDuration  int
+	CacheDuration int
 	Keys
 }
 
@@ -76,6 +79,7 @@ func LoadConfig(path string) (Config, error) {
 			PathUserCAPrivateKey: defOptions.PathUserCAPrivateKey,
 			PathUserCAPublicKey:  defOptions.PathUserCAPublicKey,
 			CertValidity:         defOptions.CertValidity,
+			CacheDuration:        defOptions.CacheDuration,
 		}
 
 		if err := hostgroup.MapTo(opts); err != nil {
@@ -92,7 +96,7 @@ func LoadConfig(path string) (Config, error) {
 		for key, val := range hostgroup.KeysHash() {
 			if key == "host-ca-privkey" || key == "host-ca-pubkey" ||
 				key == "user-ca-privkey" || key == "user-ca-pubkey" ||
-				key == "cert-validity" {
+				key == "cert-validity" || key == "cache-duration" {
 				continue
 			}
 
@@ -106,7 +110,8 @@ func LoadConfig(path string) (Config, error) {
 				hg.PathHostCAPublicKey == "" ||
 				hg.PathUserCAPrivateKey == "" ||
 				hg.PathUserCAPublicKey == "" ||
-				hg.CertValidity == "") {
+				hg.CertValidity == "" ||
+				hg.CacheDuration == 0) {
 			return conf, errors.New("missing option in hostgroup " + hg.Name)
 		}
 
@@ -117,7 +122,7 @@ func LoadConfig(path string) (Config, error) {
 		return conf, errors.New("could not open and parse keys")
 	}
 
-	if parseCertValidities(&conf) != nil {
+	if parseCertValidity(&conf) != nil {
 		return conf, errors.New("could not parse certificate validities")
 	}
 
@@ -164,7 +169,7 @@ func loadKeys(conf *Config) error {
 	return nil
 }
 
-func parseCertValidities(conf *Config) error {
+func parseCertValidity(conf *Config) error {
 	for i, group := range conf.HostGroups {
 		validity := group.CertValidity
 
@@ -173,12 +178,12 @@ func parseCertValidities(conf *Config) error {
 			continue
 		}
 
-		dur, err := time.ParseDuration(validity)
+		dur, err := strconv.Atoi(validity)
 		if err != nil {
 			return err
 		}
 
-		conf.HostGroups[i].CertDuration = uint64(dur.Seconds())
+		conf.HostGroups[i].CertDuration = dur
 	}
 
 	return nil
@@ -221,10 +226,11 @@ func (c Config) GetInfo(host string) (HostInfo, error) {
 
 			if util.MatchesHost(host, "", hostName, "") {
 				return HostInfo{
-					Name:         hostName,
-					URL:          caURL,
-					CertDuration: hostGroup.CertDuration,
-					Keys:         hostGroup.Keys,
+					Name:          hostName,
+					URL:           caURL,
+					CertDuration:  hostGroup.CertDuration,
+					CacheDuration: hostGroup.CacheDuration,
+					Keys:          hostGroup.Keys,
 				}, nil
 			}
 		}
