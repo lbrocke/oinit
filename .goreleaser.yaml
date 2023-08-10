@@ -1,7 +1,7 @@
 release:
   draft: true
-  prerelease: false
-
+  prerelease: auto
+dist: results
 builds:
   - id: oinit
     main: ./cmd/oinit
@@ -28,7 +28,7 @@ builds:
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.CommitDate}} -X main.builtBy=goreleaser
     mod_timestamp: "{{.CommitTimestamp}}"
-  
+
   - id: oinit-shell
     main: ./cmd/oinit-shell
     binary: oinit-shell
@@ -66,7 +66,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
@@ -75,8 +75,8 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
 
 nfpms:
   - id: oinit
@@ -191,14 +191,13 @@ nfpms:
       lintian_overrides:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
-
 dockers:
   - id: oinit-ca
     ids:
       - oinit-ca
     image_templates:
-      - '{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:latest'
-      - '{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:{{ .Tag }}'
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:latest"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE }}:{{ .Tag }}"
     dockerfile: "build/Dockerfile.goreleaser"
     build_flag_templates:
       - "--pull"
