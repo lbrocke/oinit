@@ -244,9 +244,23 @@ func handleCommandMatch(args []string) {
 		os.Exit(1)
 	}
 
+	var sshAgent agent.ExtendedAgent
+
+	// Check whether ssh agent is running and a certificate already exists.
+	// This check is done before the oidc-agent check, because the oidc-agent
+	// isn't required to be running in this case.
+	sshAgentRunning := sshutil.AgentIsRunning()
+	if sshAgentRunning {
+		sshAgent, _ = sshutil.GetAgent()
+
+		if exists, err := sshutil.AgentHasCertificate(sshAgent, host); err == nil && exists {
+			// Agent already holds certificate, therefore do not request a new one
+			return
+		}
+	}
+
 	// Make sure both ssh-agent and oidc-agent are running
-	sshAgentRunning, oidcAgentRunning := sshutil.AgentIsRunning(), oidc.AgentIsRunning()
-	if !sshAgentRunning || !oidcAgentRunning {
+	if oidcAgentRunning := oidc.AgentIsRunning(); !sshAgentRunning || !oidcAgentRunning {
 		for agent, running := range map[string]bool{
 			"ssh-agent":  sshAgentRunning,
 			"oidc-agent": oidcAgentRunning,
@@ -259,12 +273,6 @@ func handleCommandMatch(args []string) {
 		}
 
 		os.Exit(1)
-	}
-
-	sshAgent, _ := sshutil.GetAgent()
-	if exists, err := sshutil.AgentHasCertificate(sshAgent, host); err == nil && exists {
-		// Agent already holds certificate, therefore do not request a new one
-		return
 	}
 
 	ca, err := oinit.GetCA(hostport)
