@@ -171,18 +171,22 @@ nfpms:
       deb:
         recommends:
           - openssh-server
+          - util-linux
           - motley-cue
       rpm:
         recommends:
           - openssh-server
+          - util-linux
           - motley-cue
       apk:
         recommends:
           - openssh
+          - util-linux
           # motley-cue is not packaged for Alpine
       archlinux:
         recommends:
           - openssh
+          - util-linux
           # motley-cue is not packaged for Arch Linux
     scripts:
       postinstall: "scripts/oinit-openssh-postinstall.sh"

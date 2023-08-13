@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/indigo-dc/liboidcagent-go v0.4.2-0.20230613074241-6bb14c3d9e17
+	github.com/mattn/go-isatty v0.0.19
 	github.com/mattn/go-tty v0.0.5
 	github.com/stretchr/testify v1.8.3
 	github.com/swaggo/files v1.0.1
@@ -36,7 +37,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oidc-mytoken/api v0.8.0 // indirect
