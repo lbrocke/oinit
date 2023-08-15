@@ -1,11 +1,9 @@
 package api
 
 import (
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -54,30 +52,4 @@ func generateUserCertificate(host string, pubkey ssh.PublicKey, username string,
 			},
 		},
 	}
-}
-
-func hasPrincipal(validPrincipals []string) bool {
-	return slices.Contains(validPrincipals, PRINCIPAL)
-}
-
-func hasForceCommand(criticalOptions map[string]string) bool {
-	for k, v := range criticalOptions {
-		if k == "force-command" && strings.HasPrefix(v, FORCE_COMMAND) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func validateUserCertificate(cert ssh.Certificate, caPubkey ssh.PublicKey) bool {
-	var certChecker ssh.CertChecker
-
-	certChecker.IsUserAuthority = func(auth ssh.PublicKey) bool {
-		return auth == caPubkey
-	}
-
-	return certChecker.CheckCert(PRINCIPAL, &cert) != nil &&
-		hasForceCommand(cert.CriticalOptions) &&
-		hasPrincipal(cert.ValidPrincipals)
 }

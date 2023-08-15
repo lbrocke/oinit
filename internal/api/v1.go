@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lbrocke/oinit/internal/caconfig"
+	"github.com/lbrocke/oinit/internal/config"
 	"github.com/lbrocke/oinit/internal/util"
 	"github.com/lbrocke/oinit/pkg/libmotleycue"
 
@@ -73,7 +73,7 @@ func (writer customLog) Write(bytes []byte) (int, error) {
 	return fmt.Print("[API] " + time.Now().Format("2006/01/02 - 15:04:05") + " " + string(bytes))
 }
 
-var cache = util.NewTimedCache[string, []Provider](10 * time.Minute)
+var cache = util.NewTimedCache[string, []Provider]()
 
 // GetIndex is the handler for GET /
 //
@@ -96,6 +96,7 @@ func GetIndex(c *gin.Context) {
 //	@Param			host	path		string	true	"Host"	example("example.com")
 //	@Success		200		{object}	ApiResponseHost
 //	@Failure		400		{object}	ApiResponseError
+//	@Failure		404		{object}	ApiResponseError
 //	@Failure		500		{object}	ApiResponseError
 //	@Failure		502		{object}	ApiResponseError
 //	@Router			/{host} [get]
@@ -109,7 +110,7 @@ func GetHost(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	conf, ok := c.MustGet("config").(caconfig.Config)
+	conf, ok := c.MustGet("config").(config.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
@@ -117,7 +118,7 @@ func GetHost(c *gin.Context) {
 
 	info, err := conf.GetInfo(host.Host)
 	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
+		Error(c, http.StatusNotFound, ERR_UNKNOWN_HOST)
 		return
 	}
 
@@ -141,7 +142,7 @@ func GetHost(c *gin.Context) {
 			}
 		}
 
-		cache.Set(info.URL, providers)
+		cache.Set(info.URL, providers, time.Duration(info.CacheDuration))
 	}
 
 	c.JSON(http.StatusOK, ApiResponseHost{
@@ -161,6 +162,7 @@ func GetHost(c *gin.Context) {
 //	@Success		201		{object}	ApiResponseCertificate
 //	@Failure		400		{object}	ApiResponseError
 //	@Failure		401		{object}	ApiResponseError
+//	@Failure		404		{object}	ApiResponseError
 //	@Failure		500		{object}	ApiResponseError
 //	@Failure		502		{object}	ApiResponseError
 //	@Router			/{host}/certificate [post]
@@ -178,13 +180,7 @@ func PostHostCertificate(c *gin.Context) {
 
 	host.Host = strings.ToLower(host.Host)
 
-	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Publickey))
-	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
-		return
-	}
-
-	conf, ok := c.MustGet("config").(caconfig.Config)
+	conf, ok := c.MustGet("config").(config.Config)
 	if !ok {
 		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
@@ -192,7 +188,13 @@ func PostHostCertificate(c *gin.Context) {
 
 	info, err := conf.GetInfo(host.Host)
 	if err != nil {
-		Error(c, http.StatusBadRequest, ERR_UNKNOWN_HOST)
+		Error(c, http.StatusNotFound, ERR_UNKNOWN_HOST)
+		return
+	}
+
+	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(body.Publickey))
+	if err != nil {
+		Error(c, http.StatusBadRequest, ERR_BAD_BODY)
 		return
 	}
 
@@ -217,22 +219,15 @@ func PostHostCertificate(c *gin.Context) {
 	// given token as "valid before" date.
 	if certDuration <= 0 {
 		if exp, err := token.Claims.GetExpirationTime(); err == nil {
-			certDuration = uint64(time.Until(exp.Time).Seconds())
+			certDuration = int(time.Until(exp.Time).Seconds())
 		}
 	}
 
-	cert := generateUserCertificate(host.Host, pubkey, status.Credentials.SSHUser, certDuration)
+	cert := generateUserCertificate(host.Host, pubkey, status.Credentials.SSHUser, uint64(certDuration))
 
 	signer, err := ssh.NewSignerFromKey(info.UserCAPrivateKey)
 	if err != nil || cert.SignCert(rand.Reader, signer) != nil {
 		Error(c, http.StatusUnauthorized, ERR_INTERNAL_ERROR)
-		return
-	}
-
-	// Make sure that certificate is valid and (this *very* is important!) has
-	// the force-command option set to the correct (non-empty) value.
-	if !validateUserCertificate(cert, info.UserCAPublicKey) {
-		Error(c, http.StatusInternalServerError, ERR_INTERNAL_ERROR)
 		return
 	}
 
