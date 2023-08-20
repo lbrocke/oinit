@@ -41,11 +41,16 @@ func main() {
 		log.LogFatal(ERR_NOT_ALLOWED)
 	}
 
-	oinitUid, err := getUid(OINIT_USER)
-	if err != nil {
-		// This should never happen, as this program couldn't be executed in
-		// the first place if the oinit user didn't exist.
-		log.LogFatal(ERR_INTERNAL)
+	target := os.Args[1]
+
+	// Make sure target user is not a system user. This is not strictly
+	// necessary because (a) oinit-ca would never issue a certificate
+	// containing a force-command to switch to a system user and (b) all proper
+	// system users (except root) have their shell so to /bin/nologin (or
+	// similar), however this check doesn't hurt and increases security.
+	targetUid, err := getUid(target)
+	if err != nil || targetUid < SYS_UID_MAX {
+		log.LogFatal(ERR_NOT_ALLOWED)
 	}
 
 	curUser, err := user.Current()
@@ -57,23 +62,27 @@ func main() {
 		log.LogFatal(ERR_INTERNAL)
 	}
 
-	// Make sure the program is executed by the oinit user. This is not
-	// strictly necessary, because the 'su' command would just prompt for a
-	// password in case the user executing this program isn't oinit.
-	if curUid != oinitUid {
-		log.LogFatal(ERR_NOT_ALLOWED)
-	}
+	// Allow user to switch to himself/herself. This is necessary because
+	// issued certificates also contain the target username as principal,
+	// allowing the user to connect as himself/herself directly without using
+	// the oinit user.
+	// Note that it requires the user to have set a password (which isn't set
+	// by motley_cue by default) and the user still has to enter his/her own
+	// password, because 'su' requires this.
+	if targetUid != curUid {
+		// In all other cases, make sure the program is executed by the oinit
+		// user. This is not strictly necessary, because the 'su' command would
+		// just prompt for a password in case the user executing this program
+		// isn't oinit.
 
-	target := os.Args[1]
+		oinitUid, err := getUid(OINIT_USER)
+		if err != nil {
+			log.LogFatal(ERR_INTERNAL)
+		}
 
-	// Make sure target user is not a system user. This is not strictly
-	// necessary because (a) oinit-ca would never issue a certificate
-	// containing a force-command to switch to a system user and (b) all proper
-	// system users (except root) have their shell so to /bin/nologin (or
-	// similar), however this check doesn't hurt and increases security.
-	targetUid, err := getUid(target)
-	if err != nil || targetUid < SYS_UID_MAX {
-		log.LogFatal(ERR_NOT_ALLOWED)
+		if curUid != oinitUid {
+			log.LogFatal(ERR_NOT_ALLOWED)
+		}
 	}
 
 	// syscall.Exec() requires full path
