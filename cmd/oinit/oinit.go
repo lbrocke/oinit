@@ -16,11 +16,13 @@ import (
 	"github.com/lbrocke/oinit/internal/oidc"
 	"github.com/lbrocke/oinit/internal/oinit"
 	"github.com/lbrocke/oinit/internal/sshutil"
+	"github.com/lbrocke/oinit/internal/util"
 	"github.com/lbrocke/oinit/pkg/log"
 
 	"github.com/mattn/go-tty"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -173,6 +175,51 @@ func handleCommandList() {
 	}
 }
 
+// getTokenFromOidcAgent prompts the user to select a supported OIDC issuer
+// and then requests an access token via oidc-agent.
+func getTokenFromOidcAgent(caClient liboinitca.Client, host string) string {
+	if !oidc.AgentIsRunning() {
+		log.LogFatalTTY("oidc-agent is not running, please start it first.")
+	}
+
+	hostRes, err := caClient.GetHost(host)
+	if err != nil {
+		log.LogFatalTTY("Contacting the CA failed: " + err.Error())
+	}
+
+	// Put provider URLs into slice to be able to sort them
+	providers := make([]string, len(hostRes.Providers))
+	for i, info := range hostRes.Providers {
+		providers[i] = info.URL
+	}
+	sort.Strings(providers)
+
+	provider, err := promptProviders(providers)
+	if err != nil {
+		log.LogFatalTTY(err.Error())
+	}
+
+	// Get scopes for selected provider
+	var scopes []string
+	for _, info := range hostRes.Providers {
+		if info.URL != provider {
+			continue
+		}
+
+		scopes = info.Scopes
+	}
+
+	token, err := oidc.GetToken(provider, scopes)
+	if err != nil {
+		log.LogFatalTTY("Could not get token from oidc-agent: " + err.Error())
+	}
+	if token == "" {
+		log.LogFatalTTY("Received an empty token from oidc-agent.")
+	}
+
+	return token
+}
+
 func promptProviders(providers []string) (string, error) {
 	if len(providers) == 0 {
 		//lint:ignore ST1005 Error is display to user directly
@@ -181,11 +228,27 @@ func promptProviders(providers []string) (string, error) {
 
 	accs := oidc.GetConfiguredAccounts()
 
+	// Check if user pre-selected an account
+	if account := os.Getenv("OIDC_AGENT_ACCOUNT"); account != "" {
+		for issuer, accounts := range accs {
+			if slices.Contains(accounts, account) {
+				return issuer, nil
+			}
+		}
+	}
+
+	// Check if user pre-selected an issuer
+	if issuer := util.Getenvs("OIDC_ISS", "OIDC_ISSUER"); issuer != "" {
+		if _, ok := accs[issuer]; ok {
+			return issuer, nil
+		}
+	}
+
 	for i, issuer := range providers {
 		str := issuer
 
 		if accounts, ok := accs[issuer]; ok && len(accounts) > 0 {
-			str = str + " (Accounts: " + strings.Join(accs[issuer], ", ") + ")"
+			str += " (Accounts: " + strings.Join(accs[issuer], ", ") + ")"
 		}
 
 		log.LogTTY(fmt.Sprintf("[%d] %s", i+1, str))
@@ -244,37 +307,6 @@ func handleCommandMatch(args []string) {
 		os.Exit(1)
 	}
 
-	var sshAgent agent.ExtendedAgent
-
-	// Check whether ssh agent is running and a certificate already exists.
-	// This check is done before the oidc-agent check, because the oidc-agent
-	// isn't required to be running in this case.
-	sshAgentRunning := sshutil.AgentIsRunning()
-	if sshAgentRunning {
-		sshAgent, _ = sshutil.GetAgent()
-
-		if exists, err := sshutil.AgentHasCertificate(sshAgent, host); err == nil && exists {
-			// Agent already holds certificate, therefore do not request a new one
-			return
-		}
-	}
-
-	// Make sure both ssh-agent and oidc-agent are running
-	if oidcAgentRunning := oidc.AgentIsRunning(); !sshAgentRunning || !oidcAgentRunning {
-		for agent, running := range map[string]bool{
-			"ssh-agent":  sshAgentRunning,
-			"oidc-agent": oidcAgentRunning,
-		} {
-			if running {
-				log.LogSuccessTTY(agent + " is running.")
-			} else {
-				log.LogErrorTTY(agent + " is not running, please start it first.")
-			}
-		}
-
-		os.Exit(1)
-	}
-
 	ca, err := oinit.GetCA(hostport)
 	if err != nil {
 		log.LogFatalTTY("The CA managing '" + host + "' could not be determined.\n" +
@@ -283,39 +315,26 @@ func handleCommandMatch(args []string) {
 
 	caClient := liboinitca.NewClient(ca)
 
-	hostRes, err := caClient.GetHost(host)
-	if err != nil {
-		log.LogFatalTTY("Contacting the CA failed: " + err.Error())
+	// Verify that ssh-agent is running, which is required in any case
+	if !sshutil.AgentIsRunning() {
+		log.LogFatalTTY("ssh-agent is not running, please start it first.")
 	}
 
-	// Put provider URLs into slice to be able to sort them
-	providers := make([]string, len(hostRes.Providers))
-	for i, info := range hostRes.Providers {
-		providers[i] = info.URL
-	}
-	sort.Strings(providers)
+	sshAgent, _ := sshutil.GetAgent()
 
-	provider, err := promptProviders(providers)
-	if err != nil {
-		log.LogFatalTTY(err.Error())
+	if exists, err := sshutil.AgentHasCertificate(sshAgent, host); err == nil && exists {
+		// Agent already holds certificate, therefore do not request a new one
+		return
 	}
 
-	// Get scopes for selected provider
-	var scopes []string
-	for _, info := range hostRes.Providers {
-		if info.URL != provider {
-			continue
-		}
+	// Try to get token from environment variable
+	token := util.Getenvs("ACCESS_TOKEN", "OIDC", "OS_ACCESS_TOKEN",
+		"OIDC_ACCESS_TOKEN", "WATTS_TOKEN", "WATTSON_TOKEN")
 
-		scopes = info.Scopes
-	}
-
-	token, err := oidc.GetToken(provider, scopes)
-	if err != nil {
-		log.LogFatalTTY("Could not get token: " + err.Error())
-	}
 	if token == "" {
-		log.LogFatalTTY("Received empty token.")
+		// Use oidc-agent to get token.
+		// getTokenFromOidcAgent() exits with -1 for any errors.
+		token = getTokenFromOidcAgent(caClient, host)
 	}
 
 	pubkey, privkey, err := generateEd25519Keys()
