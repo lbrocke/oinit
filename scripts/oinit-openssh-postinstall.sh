@@ -4,7 +4,7 @@ set -eu
 
 # Create oinit system user
 if ! getent passwd oinit >/dev/null; then
-    useradd --system --shell /usr/bin/oinit-shell --home-dir /nonexistent --no-create-home --badname oinit > /dev/null
+    useradd --system --shell /usr/bin/oinit-shell --home-dir /tmp --no-create-home --badname oinit > /dev/null
 fi
 
 # Generate host key pair
