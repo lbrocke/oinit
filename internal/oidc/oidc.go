@@ -16,6 +16,9 @@ type socket struct {
 	Type          string
 }
 
+// GetConfiguredAccounts returns a map of configured accounts. The map key is
+// the issuer URL, while the corresponding value is a list of oidc-agent
+// account short names.
 func GetConfiguredAccounts() map[string][]string {
 	// liboidcagent provides GetConfiguredAccounts() which however only returns
 	// the short names of accounts, no issuer URLs.

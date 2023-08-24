@@ -1,6 +1,9 @@
 package util
 
-import "strings"
+import (
+	"os"
+	"strings"
+)
 
 // matchesHost determines whether given host and port match host2 and port2.
 // host2 may be a wildcard domain in the form of
@@ -16,4 +19,16 @@ func MatchesHost(host string, port string, host2 string, port2 string) bool {
 	} else {
 		return host == host2 && port == port2
 	}
+}
+
+// Getenvs is equal to os.Getenv() but for multiple keys. It returns the first
+// non-empty value or an empty string, if none is set.
+func Getenvs(keys ...string) string {
+	for _, key := range keys {
+		if val := os.Getenv(key); val != "" {
+			return val
+		}
+	}
+
+	return ""
 }
