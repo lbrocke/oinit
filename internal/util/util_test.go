@@ -21,6 +21,15 @@ func TestMatchesHost(t *testing.T) {
 	}{
 		{
 			args: args{
+				host:  "localhost",
+				port:  "22",
+				host2: "localhost",
+				port2: "22",
+			},
+			matches: true,
+		},
+		{
+			args: args{
 				host:  "example.com",
 				port:  "22",
 				host2: "example.com",
