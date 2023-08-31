@@ -89,24 +89,36 @@ prerelease:
   - |
     echo "Installing packages..."
     apt update
-    apt install -y curl gpg
+    apt install -y curl gpg python3-pip
+    PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install contextualise-ssh-server
 
+    # release
+    curl https://repo.data.kit.edu/repo-data-kit-edu-key.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/kitrepo-archive.gpg
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.gpg] https://repo.data.kit.edu/${DISTRO}/${RELEASE} ./" > /etc/apt/sources.list.d/kit-repo.list
+    apt update
+    apt install -y mytoken oidc-agent motley-cue
+
+    # prerel (overwrite release repo because no Suite name is set, therefore targeting repo with 'apt -t' not possible)
     curl https://repo.data.kit.edu/devel/automatic-repo-data-kit-edu-key.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/auto-kitrepo-archive.gpg
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/auto-kitrepo-archive.gpg] https://repo.data.kit.edu/prerel/${DISTRO}/${RELEASE} ./" > /etc/apt/sources.list.d/kit-repo.list
-
     apt update
-    apt install -y oinit oinit-openssh oinit-ca mytoken python3-pip
-    PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install contextualise-ssh-server
+    apt install -y oinit oinit-openssh oinit-ca
 
 .setup-repo-rpm: &setup-repo-rpm
   - |
     echo "Installing packages..."
-    yum -y install wget
-    (cd /etc/yum.repos.d; wget https://repo.data.kit.edu/prerel/data-kit-edu-${DISTRO}${RELEASE}.repo)
-    yum makecache
-
-    yum -y install oinit oinit-openssh oinit-ca mytoken python3-pip
+    yum -y install wget python3-pip
     pip3 install contextualise-ssh-server
+
+    # release
+    (cd /etc/yum.repos.d; wget https://repo.data.kit.edu/data-kit-edu-${DISTRO}${RELEASE}.repo)
+    yum makecache
+    yum -y install oidc-agent motley-cue
+
+    # prerel (overwrite release repo because they have the same name, therefore targeting repo with 'yum --enablerepo' not possible)
+    (cd /etc/yum.repos.d; rm -rf data-kit-edu-*.repo; wget https://repo.data.kit.edu/prerel/data-kit-edu-${DISTRO}${RELEASE}.repo)
+    yum makecache
+    yum -y install oinit oinit-openssh oinit-ca mytoken
 
 .run-integration: &run-integration
   - |
