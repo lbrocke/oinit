@@ -18,6 +18,8 @@ const (
 	SWAGGER_DESC  = "Swagger documentation for the oinit CA REST API."
 )
 
+// ConfigMiddleware is a middleware function that attaches a configuration object
+// to the Gin context. This allows handlers downstream to access the configuration.
 func ConfigMiddleware(config config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("config", config)

@@ -37,6 +37,8 @@ const (
 		"\toinit list\t\t\tList all hosts managed by oinit.\n"
 )
 
+// handleCommandAdd handles the 'add' command to add a host managed by oinit.
+// It takes the host and optional CA as arguments.
 func handleCommandAdd(args []string) {
 	if len(args) < 1 {
 		fmt.Print(USAGE)
@@ -125,6 +127,8 @@ func handleCommandAdd(args []string) {
 	}
 }
 
+// handleCommandDelete handles the 'delete' command to delete a host.
+// It takes the host as an argument.
 func handleCommandDelete(args []string) {
 	if len(args) < 1 {
 		fmt.Print(USAGE)
@@ -155,6 +159,7 @@ func handleCommandDelete(args []string) {
 	log.LogSuccess(hostport + " was deleted.")
 }
 
+// handleCommandList handles the 'list' command to list all hosts managed by oinit.
 func handleCommandList() {
 	all, err := oinit.GetManagedHosts()
 	if err != nil {
@@ -176,7 +181,8 @@ func handleCommandList() {
 }
 
 // getTokenFromOidcAgent prompts the user to select a supported OIDC issuer
-// and then requests an access token via oidc-agent.
+// and then requests an access token via oidc-agent. It takes the CA client
+// and host as arguments and returns the access token.
 func getTokenFromOidcAgent(caClient liboinitca.Client, host string) string {
 	if !oidc.AgentIsRunning() {
 		log.LogFatalTTY("oidc-agent is not running, please start it first.")
@@ -220,6 +226,9 @@ func getTokenFromOidcAgent(caClient liboinitca.Client, host string) string {
 	return token
 }
 
+// promptProviders prompts the user to select an OIDC provider from the list
+// of available providers. It takes a list of provider URLs as arguments and
+// returns the selected provider URL.
 func promptProviders(providers []string) (string, error) {
 	if len(providers) == 0 {
 		//lint:ignore ST1005 Error is display to user directly
@@ -293,6 +302,8 @@ func generateEd25519Keys() (string, ed25519.PrivateKey, error) {
 	return strings.TrimSuffix(string(ssh.MarshalAuthorizedKey(pubkeyInst)), "\n"), privkey, nil
 }
 
+// handleCommandMatch handles the 'match' command to match a host managed by oinit.
+// It takes the host and port as arguments.
 func handleCommandMatch(args []string) {
 	if len(args) != 2 {
 		os.Exit(1)
