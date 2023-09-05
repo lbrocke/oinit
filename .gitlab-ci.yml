@@ -113,12 +113,12 @@ prerelease:
     # release
     (cd /etc/yum.repos.d; wget https://repo.data.kit.edu/data-kit-edu-${DISTRO}${RELEASE}.repo)
     yum makecache
-    yum -y install mytoken oidc-agent motley-cue
+    yum -y install oidc-agent motley-cue
 
     # prerel (overwrite release repo because they have the same name, therefore targeting repo with 'yum --enablerepo' not possible)
     (cd /etc/yum.repos.d; rm -rf data-kit-edu-*.repo; wget https://repo.data.kit.edu/prerel/data-kit-edu-${DISTRO}${RELEASE}.repo)
     yum makecache
-    yum -y install oinit oinit-openssh oinit-ca
+    yum -y install oinit oinit-openssh oinit-ca mytoken
 
 .run-integration: &run-integration
   - |
