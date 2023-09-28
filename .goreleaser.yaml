@@ -99,10 +99,12 @@ nfpms:
       deb:
         dependencies:
           - openssh-client
+        recommends:
           - oidc-agent
       rpm:
         dependencies:
           - openssh-clients
+        recommends:
           - oidc-agent
       apk:
         dependencies:

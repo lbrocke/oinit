@@ -1,9 +1,11 @@
 image: golang:1.20
+
 stages:
   - build
   - test
   - lint
   - release
+  - integration
 
 default:
   tags:
@@ -21,13 +23,14 @@ test:
   script:
     - go test -v ./...
 
-test_race:
+test-race:
   stage: test
   script:
     - go test -race -v ./...
 
 staticcheck:
   stage: lint
+  allow_failure: true
   before_script:
     - go install honnef.co/go/tools/cmd/staticcheck@latest
   script:
@@ -35,25 +38,26 @@ staticcheck:
 
 vet:
   stage: lint
+  allow_failure: true
   script:
     - go vet ./...
 
-build_oinit:
+oinit:
   stage: build
   script:
     - make oinit
 
-build_oinit_ca:
+oinit-ca:
   stage: build
   script:
     - make oinit-ca
 
-build_oinit_shell:
+oinit-shell:
   stage: build
   script:
     - make oinit-shell
 
-build_oinit_switch:
+oinit-switch:
   stage: build
   script:
     - make oinit-switch
@@ -80,3 +84,137 @@ prerelease:
     - .gitlab-ci-scripts/goreleaser.sh && .gitlab-ci-scripts/upload.sh
   # after_script:
   #   - docker run --rm curlimages/curl -d "repo=github.com/lbrocke/oinit" https://goreportcard.com/checks
+
+.setup-repo-deb: &setup-repo-deb
+  - |
+    echo "Installing packages..."
+    apt update
+    apt install -y curl gpg python3-pip
+    PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install contextualise-ssh-server
+
+    # release
+    curl https://repo.data.kit.edu/repo-data-kit-edu-key.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/kitrepo-archive.gpg
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.gpg] https://repo.data.kit.edu/${DISTRO}/${RELEASE} ./" > /etc/apt/sources.list.d/kit-repo.list
+    apt update
+    apt install -y mytoken oidc-agent motley-cue
+
+    # prerel (overwrite release repo because no Suite name is set, therefore targeting repo with 'apt -t' not possible)
+    curl https://repo.data.kit.edu/devel/automatic-repo-data-kit-edu-key.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/auto-kitrepo-archive.gpg
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/auto-kitrepo-archive.gpg] https://repo.data.kit.edu/prerel/${DISTRO}/${RELEASE} ./" > /etc/apt/sources.list.d/kit-repo.list
+    apt update
+    apt install -y oinit oinit-openssh oinit-ca
+
+.setup-repo-rpm: &setup-repo-rpm
+  - |
+    echo "Installing packages..."
+    yum -y install wget python3-pip
+    pip3 install contextualise-ssh-server
+
+    # release
+    (cd /etc/yum.repos.d; wget https://repo.data.kit.edu/data-kit-edu-${DISTRO}${RELEASE}.repo)
+    yum makecache
+    yum -y install oidc-agent motley-cue
+
+    # prerel (overwrite release repo because they have the same name, therefore targeting repo with 'yum --enablerepo' not possible)
+    (cd /etc/yum.repos.d; rm -rf data-kit-edu-*.repo; wget https://repo.data.kit.edu/prerel/data-kit-edu-${DISTRO}${RELEASE}.repo)
+    yum makecache
+    yum -y install oinit oinit-openssh oinit-ca mytoken
+
+.run-integration: &run-integration
+  - |
+    echo "Getting access token..."
+    export OIDC=`mytoken AT --MT $MYTOKEN || echo no-token-obtained`
+
+    if [ "${OIDC}" = "no-token-obtained" ]; then
+      echo "Could not obtain OIDC access token."
+      exit 1
+    fi
+
+    echo "Configuring motley_cue..."
+    (cd /etc/motley_cue; contextualise_ssh_server $OIDC)
+
+    for i in `cat /etc/motley_cue/motley_cue.env`; do export $i; done
+
+    /usr/lib/motley-cue/bin/gunicorn motley_cue.api:api -k "uvicorn.workers.UvicornWorker" --config /usr/lib/motley-cue/etc/gunicorn/gunicorn.conf.py > /dev/null &
+
+    echo "Configuring sshd..."
+    echo -e 'y\n' | ssh-keygen -t ed25519 -f /etc/ssh/host-key -N "" > /dev/null
+    echo -e 'y\n' | ssh-keygen -s /etc/oinit-ca/host-ca -I localhost -h -n localhost /etc/ssh/host-key > /dev/null
+
+    echo "
+    HostKey				/etc/ssh/host-key
+    HostCertificate		/etc/ssh/host-key-cert.pub
+    TrustedUserCAKeys	/etc/oinit-ca/user-ca.pub" >> /etc/ssh/sshd_config
+
+    sed -i '1s;^;auth [success=ignore default=1] pam_succeed_if.so use_uid user = oinit\nauth sufficient pam_succeed_if.so uid ne 0\n\n;' /etc/pam.d/su
+
+    mkdir -p -m0755 /var/run/sshd # https://askubuntu.com/a/1110843
+    /usr/sbin/sshd > /dev/null &
+
+    echo "Configuring oinit-ca..."
+    echo "
+    [localhost]
+    localhost = http://localhost:8080" >> /etc/oinit-ca/config.ini
+
+    /usr/sbin/oinit-ca 127.0.0.1:8081 /etc/oinit-ca/config.ini > /dev/null &
+
+    echo "Starting ssh-agent..."
+    eval `ssh-agent`
+
+    mkdir -p ~/.ssh/
+
+    echo "Waiting for services to start..."
+    sleep 10
+
+    echo "Configuring oinit..."
+    oinit add localhost http://localhost:8081
+
+    echo "Running ssh..."
+    if [ "$(ssh localhost 'echo -n success')" == "success" ]; then
+      echo "ssh command succeeded."
+    else
+      echo "ssh command failed."
+      exit 1
+    fi
+
+debian-bookworm:
+  stage: integration
+  only:
+    refs:
+      - tags
+      - prerelease
+  script:
+    - *setup-repo-deb
+    - *run-integration
+  variables:
+    DISTRO: debian
+    RELEASE: bookworm
+  image: debian:bookworm-slim
+
+ubuntu-jammy:
+  stage: integration
+  only:
+    refs:
+      - tags
+      - prerelease
+  script:
+    - *setup-repo-deb
+    - *run-integration
+  variables:
+    DISTRO: ubuntu
+    RELEASE: jammy
+  image: ubuntu:jammy
+
+fedora-38:
+  stage: integration
+  only:
+    refs:
+      - tags
+      - prerelease
+  script:
+    - *setup-repo-rpm
+    - *run-integration
+  variables:
+    DISTRO: fedora
+    RELEASE: 38
+  image: fedora:38

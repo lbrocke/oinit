@@ -1,6 +1,7 @@
 package util
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,15 @@ func TestMatchesHost(t *testing.T) {
 		args    args
 		matches bool
 	}{
+		{
+			args: args{
+				host:  "localhost",
+				port:  "22",
+				host2: "localhost",
+				port2: "22",
+			},
+			matches: true,
+		},
 		{
 			args: args{
 				host:  "example.com",
@@ -72,4 +82,16 @@ func TestMatchesHost(t *testing.T) {
 			MatchesHost(tt.args.host, tt.args.port, tt.args.host2, tt.args.port2),
 		)
 	}
+}
+
+func TestGetenvs(t *testing.T) {
+	keys := []string{"TEST_1", "TEST_2"}
+
+	assert.Equal(t, Getenvs(keys...), "")
+
+	os.Setenv(keys[1], keys[1])
+	assert.Equal(t, Getenvs(keys...), keys[1])
+
+	os.Setenv(keys[0], keys[0])
+	assert.Equal(t, Getenvs(keys...), keys[0])
 }
