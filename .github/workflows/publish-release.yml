@@ -10,10 +10,8 @@ name: Create Release
 
 jobs:
   release:
+    permissions: write-all
     runs-on: ubuntu-latest
-
-    permissions:
-      actions: 'write'
 
     steps:
       - name: Checkout
@@ -21,9 +19,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get branch
+        run: |
+          raw=$(git branch -r --contains ${{ github.ref }})
+          branch=${raw/origin\/}
+          echo ::set-env name=BRANCH::$branch
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
       # Make sure tag was pushed to main branch
       - name: Check branch
-        if: endsWith(github.ref, 'main') == false
+        if: endsWith(env.BRANCH, 'main') == false
         run: |
           gh run cancel ${{ github.run_id }}
           gh run watch ${{ github.run_id }}
