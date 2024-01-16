@@ -3,7 +3,7 @@
 
 [![GitHub release](https://img.shields.io/github/release/lbrocke/oinit?include_prereleases=&sort=semver&color=blue)](https://github.com/lbrocke/oinit/releases/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/lbrocke/oinit/blob/main/LICENSE)
-[![Gitlab CI](https://git.scc.kit.edu/m-team/oinit/badges/main/pipeline.svg)](https://git.scc.kit.edu/m-team/oinit/-/pipelines)
+[![Gitlab CI](https://git.scc.kit.edu/m-team/oidc/ssh/oinit/badges/main/pipeline.svg)](https://git.scc.kit.edu/m-team/oidc/ssh/oinit/-/pipelines)
 
 This repository contains a collection of programs to enable OpenSSH login for federated identities based on certificates.
 
