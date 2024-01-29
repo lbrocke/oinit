@@ -7,7 +7,7 @@
 
 This repository contains a collection of programs to enable OpenSSH login for federated identities based on certificates.
 
-Please refer to the [Wiki](https://github.com/lbrocke/oinit/wiki) to learn about installation and configuration.
+Please refer to the [Documentation directory](Documentation/README.md) to learn about installation and configuration.
 
 <p align="center">
   <img src=".github/oinit.gif" /><br>
