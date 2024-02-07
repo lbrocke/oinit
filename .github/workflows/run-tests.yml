@@ -1,0 +1,50 @@
+name: Run tests
+
+on: push
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    name: go fmt
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: go fmt
+      run: make fmt-check
+
+  test:
+    runs-on: ubuntu-latest
+    name: go test
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: go test
+      run: make test
+
+  vet:
+    runs-on: ubuntu-latest
+    name: go vet
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: go vet
+      run: make vet
+
+  staticcheck:
+    runs-on: ubuntu-latest
+    name: staticcheck
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: staticcheck
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        make staticcheck

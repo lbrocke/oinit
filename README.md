@@ -34,6 +34,9 @@ When changing the REST API annotations, run `make swagger` to generate the Swagg
 **Testing**:
 
 ```sh
+# Formating
+$ make fmt
+
 # Unit tests
 $ make test
 
@@ -42,7 +45,7 @@ $ make vet
 $ make staticcheck # go install honnef.co/go/tools/cmd/staticcheck@latest
 ```
 
-Alternatively, run `make all-tests` to run tests and static analysis.
+Alternatively, run `make all-checks` to run tests and static analysis.
 
 ### Branches
 

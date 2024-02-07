@@ -1,6 +1,6 @@
 OUT=./bin
 
-.PHONY: all oinit oinit-ca oinit-shell oinit-switch oinit-ca-docker swagger clean all-tests test vet staticcheck
+.PHONY: all oinit oinit-ca oinit-shell oinit-switch oinit-ca-docker swagger clean all-checks fmt fmt-check test vet staticcheck
 
 all: oinit oinit-ca oinit-shell oinit-switch
 
@@ -26,7 +26,13 @@ swagger:
 clean:
 	rm -rf ./bin
 
-all-tests: test vet staticcheck
+all-checks: fmt test vet staticcheck
+
+fmt:
+	go fmt ./...
+
+fmt-check:
+	test -z $$(gofmt -l .)
 
 test:
 	go test -v ./...
