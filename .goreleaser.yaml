@@ -89,10 +89,8 @@ nfpms:
       Command-line tool to enable federated identities in OpenSSH.
     license: MIT
     formats:
-      - apk
       - deb
       - rpm
-      - archlinux
     provides:
       - oinit
     overrides:
@@ -106,14 +104,6 @@ nfpms:
           - openssh-clients
         recommends:
           - oidc-agent
-      apk:
-        dependencies:
-          - openssh-client
-          # oidc-agent is not packaged for Alpine
-      archlinux:
-        dependencies:
-          - openssh
-          # oidc-agent is not packaged for Arch Linux
     deb:
       lintian_overrides:
         - statically-linked-binary
@@ -129,10 +119,8 @@ nfpms:
       Certificate authority for oinit command-line tool.
     license: MIT
     formats:
-      - apk
       - deb
       - rpm
-      - archlinux
     provides:
       - oinit-ca
     bindir: /usr/sbin
@@ -162,10 +150,8 @@ nfpms:
       oinit programs to integrate with OpenSSH.
     license: MIT
     formats:
-      - apk
       - deb
       - rpm
-      - archlinux
     provides:
       - oinit-openssh
     bindir: /usr/bin
@@ -180,16 +166,6 @@ nfpms:
           - openssh-server
           - util-linux
           - motley-cue
-      apk:
-        recommends:
-          - openssh
-          - util-linux
-          # motley-cue is not packaged for Alpine
-      archlinux:
-        recommends:
-          - openssh
-          - util-linux
-          # motley-cue is not packaged for Arch Linux
     scripts:
       postinstall: "scripts/oinit-openssh-postinstall.sh"
       preremove: "scripts/oinit-openssh-preremove.sh"
@@ -197,6 +173,7 @@ nfpms:
       lintian_overrides:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
+
 dockers:
   - id: oinit-ca
     ids:
