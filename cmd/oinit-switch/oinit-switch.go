@@ -62,9 +62,9 @@ func main() {
 		log.LogFatal(ERR_INTERNAL)
 	}
 
-	// Allow user to switch to himself/herself. This is necessary because
+	// Allow user to switch to themself. This is necessary because
 	// issued certificates also contain the target username as principal,
-	// allowing the user to connect as himself/herself directly without using
+	// allowing the user to connect as themself directly without using
 	// the oinit user.
 	// Note that it requires the user to have set a password (which isn't set
 	// by motley_cue by default) and the user still has to enter his/her own
@@ -104,7 +104,7 @@ func main() {
 		// do not use the '-P' option here.
 		// To prevent users abusing this security hole, for example by forcing
 		// tty allocation anyway ("ssh -tt example.org /bin/bash"), make sure
-		// this program does not run ssh command when a tty is present.
+		// this program does not run ssh commands when a tty is present.
 
 		if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 			log.LogFatal(ERR_NOT_ALLOWED)
