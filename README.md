@@ -48,7 +48,7 @@ Alternatively, run `make all-checks` to run tests and static analysis.
 Development happens on feature branches checked out from and merged back into `prerelease`.
 When ready, commits are merged into `main` and tagged as release.
 
-[Github Actions](https://github.com/lbrocke/oinit/actions) create new Docker images for GHCR on release. The [Gitlab CI](https://git.scc.kit.edu/m-team/oinit/-/pipelines) runs integration tests and creates Linux packages.
+[Github Actions](https://github.com/lbrocke/oinit/actions) create new Docker images for GHCR on release. The [Gitlab CI](https://codebase.helmholtz.cloud/m-team/oidc/ssh/oinit/-/pipelines) runs integration tests and creates Linux packages.
 
 ## License
 

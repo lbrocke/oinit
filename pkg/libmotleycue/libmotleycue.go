@@ -50,7 +50,7 @@ type ApiResponseInfo struct {
 type UserStatusState string
 
 const (
-	// See https://git.scc.kit.edu/feudal/feudalAdapterLdf/-/blob/master/states.md
+	// See https://codebase.helmholtz.cloud/m-team/feudal/feudaladapterldf/-/blob/master/states.md
 	StateDeployed    UserStatusState = "deployed"
 	StateNotDeployed UserStatusState = "not_deployed"
 	StatePending     UserStatusState = "pending"
