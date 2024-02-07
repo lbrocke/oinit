@@ -21,12 +21,7 @@ before_script:
 test:
   stage: test
   script:
-    - go test -v ./...
-
-test-race:
-  stage: test
-  script:
-    - go test -race -v ./...
+    - make test
 
 staticcheck:
   stage: lint
@@ -34,13 +29,13 @@ staticcheck:
   before_script:
     - go install honnef.co/go/tools/cmd/staticcheck@latest
   script:
-    - staticcheck ./...
+    - make staticcheck
 
 vet:
   stage: lint
   allow_failure: true
   script:
-    - go vet ./...
+    - make vet
 
 oinit:
   stage: build

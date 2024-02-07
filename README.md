@@ -16,6 +16,8 @@ Please refer to the [Documentation directory](Documentation/README.md) to learn 
 
 ## Development
 
+**Building**:
+
 ```sh
 # Client application
 $ make oinit
@@ -28,6 +30,19 @@ $ make oinit-ca
 ```
 
 When changing the REST API annotations, run `make swagger` to generate the Swagger files.
+
+**Testing**:
+
+```sh
+# Unit tests
+$ make test
+
+# Static analysis
+$ make vet
+$ make staticcheck # go install honnef.co/go/tools/cmd/staticcheck@latest
+```
+
+Alternatively, run `make all-tests` to run tests and static analysis.
 
 ### Branches
 
